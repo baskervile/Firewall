@@ -75,6 +75,13 @@
 //block list
 @property (weak) IBOutlet NSTextField* blockList;
 
+//runtime list-status labels
+@property (weak) IBOutlet NSTextField* allowListStatus;
+@property (weak) IBOutlet NSTextField* blockListStatus;
+
+//refreshes status while the Lists pane is visible
+@property(nonatomic, retain)NSTimer* listStatusTimer;
+
 //select block list button
 @property (weak) IBOutlet NSButton* selectBlockListButton;
 

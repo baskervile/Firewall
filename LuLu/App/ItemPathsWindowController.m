@@ -171,7 +171,7 @@ extern XPCDaemonClient* xpcDaemonClient;
             if(YES != matchesCSInfo(self.item[KEY_CS_INFO], signingInfo))
             {
                 //dbg msg
-                os_log_debug(logHandle, "rule's code signing info %{public}@ doesn't match item's %{public}@", self.item[KEY_CS_INFO], signingInfo);
+                os_log_debug(logHandle, "rule's code signing info %{private}@ doesn't match item's %{private}@", self.item[KEY_CS_INFO], signingInfo);
                 
                 //skip
                 continue;
@@ -192,7 +192,7 @@ bail:
 -(IBAction)closeButtonHandler:(id)sender {
     
     //dbg msg
-    os_log_debug(logHandle, "user clicked: %{public}@", ((NSButton*)sender).title);
+    os_log_debug(logHandle, "user clicked: %{private}@", ((NSButton*)sender).title);
     
     //close & return NSModalResponseCancel
     [self.window.sheetParent endSheet:self.window returnCode:NSModalResponseOK];

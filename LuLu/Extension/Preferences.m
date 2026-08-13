@@ -81,7 +81,7 @@ bail:
     if(YES != [NSFileManager.defaultManager fileExistsAtPath:path])
     {
         //dbg msg
-        os_log_debug(logHandle, "default preferences file '%{public}@' not found ...first time?", path);
+        os_log_debug(logHandle, "default preferences file '%{private}@' not found ...first time?", path);
         
         //done
         goto bail;
@@ -98,7 +98,7 @@ bail:
 bail:
     
     //dbg msg
-    os_log_debug(logHandle, "using preferences file: %{public}@", path);
+    os_log_debug(logHandle, "using preferences file: %{private}@", path);
     
     return path;
 }
@@ -117,12 +117,12 @@ bail:
     if(nil == self.preferences)
     {
         //err msg
-        os_log_error(logHandle, "ERROR: failed to load preference from %{public}@", prefsFile);
+        os_log_error(logHandle, "ERROR: failed to load preference from %{private}@", prefsFile);
         goto bail;
     }
     
     //dbg msg
-    os_log_debug(logHandle, "from %{public}@, loaded preferences: %{public}@", prefsFile, self.preferences);
+    os_log_debug(logHandle, "from %{private}@, loaded preferences: %{private}@", prefsFile, self.preferences);
     
     //set any defaults
     [self setDefaults];
@@ -181,7 +181,7 @@ bail:
     if(YES == replace)
     {
         //dbg msg
-        os_log_debug(logHandle, "replacing preferences (%{public}@)", updates);
+        os_log_debug(logHandle, "replacing preferences (%{private}@)", updates);
         
         //replace
         self.preferences = [updates mutableCopy];
@@ -190,7 +190,7 @@ bail:
     else
     {
         //dbg msg
-        os_log_debug(logHandle, "updating preferences (%{public}@)", updates);
+        os_log_debug(logHandle, "updating preferences (%{private}@)", updates);
         
         //add in (new) prefs
         [self.preferences addEntriesFromDictionary:updates];
@@ -217,7 +217,7 @@ bail:
     if(0 != [allowListPath length])
     {
         //dbg msg
-        os_log_debug(logHandle, "user specified new 'allow' list: %{public}@", allowListPath);
+        os_log_debug(logHandle, "user specified new 'allow' list: %{private}@", allowListPath);
         
         //first time?
         if(nil == allowList)
@@ -248,7 +248,7 @@ bail:
     if(0 != [blockListPath length])
     {
         //dbg msg
-        os_log_debug(logHandle, "user specified new 'block' list: %{public}@", blockListPath);
+        os_log_debug(logHandle, "user specified new 'block' list: %{private}@", blockListPath);
 
         //first time?
         if(nil == blockList)
@@ -300,12 +300,12 @@ bail:
     if(YES != [self.preferences writeToFile:prefsFile atomically:YES])
     {
         //err msg
-        os_log_error(logHandle, "ERROR: failed to save preferences to: %{public}@", prefsFile);
+        os_log_error(logHandle, "ERROR: failed to save preferences to: %{private}@", prefsFile);
         goto bail;
     }
     
     //dbg msg
-    os_log_debug(logHandle, "saved preferences to %{public}@", prefsFile);
+    os_log_debug(logHandle, "saved preferences to %{private}@", prefsFile);
     
     //happy
     wasSaved = YES;
@@ -332,7 +332,7 @@ bail:
     currentProfile = defaultPreferences[PREF_CURRENT_PROFILE];
     
     //dbg msg
-    os_log_debug(logHandle, "returning current profile %{public}@", currentProfile);
+    os_log_debug(logHandle, "returning current profile %{private}@", currentProfile);
     
     return currentProfile;
 }
@@ -354,7 +354,7 @@ bail:
     [defaultPreferences writeToFile:defaultPreferencesFile atomically:YES];
     
     //dbg msg
-    os_log_debug(logHandle, "set current profile to %{public}@", profilePath);
+    os_log_debug(logHandle, "set current profile to %{private}@", profilePath);
     
     return;
 }

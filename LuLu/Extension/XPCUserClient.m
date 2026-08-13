@@ -56,7 +56,7 @@ extern os_log_t logHandle;
         [[xpcListener.client remoteObjectProxyWithErrorHandler:^(NSError * proxyError)
         {
             //err msg
-            os_log_error(logHandle, "ERROR: failed to execute daemon XPC method '%s' (error: %{public}@)", __PRETTY_FUNCTION__, proxyError);
+            os_log_error(logHandle, "ERROR: failed to execute daemon XPC method '%s' (error: %{private}@)", __PRETTY_FUNCTION__, proxyError);
             
             //set error
             xpcError = YES;
@@ -64,7 +64,7 @@ extern os_log_t logHandle;
         }] alertShow:alert reply:^(NSDictionary* userReply)
         {
             //dbg msg
-            os_log_debug(logHandle, "reply: %{public}@", alert);
+            os_log_debug(logHandle, "reply: %{private}@", alert);
             
             //respond
             reply(userReply);
@@ -94,7 +94,7 @@ bail:
     [[xpcListener.client remoteObjectProxyWithErrorHandler:^(NSError * proxyError)
     {
         //err msg
-        os_log_error(logHandle, "ERROR: failed to execute 'rulesChanged' method on launch daemon (error: %{public}@)", proxyError);
+        os_log_error(logHandle, "ERROR: failed to execute 'rulesChanged' method on launch daemon (error: %{private}@)", proxyError);
           
     }] rulesChanged];
     

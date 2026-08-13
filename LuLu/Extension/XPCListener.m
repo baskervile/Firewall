@@ -141,7 +141,7 @@ extern os_log_t logHandle;
     auditToken = ((ExtendedNSXPCConnection*)newConnection).auditToken;
     
     //dbg msg
-    os_log_debug(logHandle, "received request to connect to XPC interface from: (%d)%{public}@", audit_token_to_pid(auditToken), getProcessPath(audit_token_to_pid(auditToken)));
+    os_log_debug(logHandle, "received request to connect to XPC interface from: (%d)%{private}@", audit_token_to_pid(auditToken), getProcessPath(audit_token_to_pid(auditToken)));
     
     //obtain dynamic code ref
     status = SecCodeCopyGuestWithAttributes(NULL, (__bridge CFDictionaryRef _Nullable)(@{(__bridge NSString *)kSecGuestAttributeAudit : [NSData dataWithBytes:&auditToken length:sizeof(audit_token_t)]}), kSecCSDefaultFlags, &codeRef);
@@ -177,7 +177,7 @@ extern os_log_t logHandle;
     }
     
     //dbg msg
-    os_log_debug(logHandle, "client's code signing info: %{public}@", csInfo);
+    os_log_debug(logHandle, "client's code signing info: %{private}@", csInfo);
     
     //extract flags
     csFlags = [((__bridge NSDictionary *)csInfo)[(__bridge NSString *)kSecCodeInfoStatus] unsignedIntValue];
@@ -273,7 +273,7 @@ extern os_log_t logHandle;
     [newConnection resume];
     
     //dbg msg
-    os_log_debug(logHandle, "allowing XPC connection from client (pid: %d, user: %{public}@)", audit_token_to_pid(auditToken), alerts.consoleUser);
+    os_log_debug(logHandle, "allowing XPC connection from client (pid: %d, user: %{private}@)", audit_token_to_pid(auditToken), alerts.consoleUser);
     
     //happy
     shouldAccept = YES;

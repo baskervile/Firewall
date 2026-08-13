@@ -220,7 +220,7 @@ bail:
 -(IBAction)cancelButtonHandler:(id)sender
 {
     //dbg msg
-    os_log_debug(logHandle, "user clicked: %{public}@", ((NSButton*)sender).title);
+    os_log_debug(logHandle, "user clicked: %{private}@", ((NSButton*)sender).title);
     
     //stop/cancel
     [NSApp stopModalWithCode:NSModalResponseCancel];
@@ -263,7 +263,7 @@ bail:
     NSError* error = nil;
 
     //dbg msg
-    os_log_debug(logHandle, "user clicked: %{public}@", ((NSButton*)sender).title);
+    os_log_debug(logHandle, "user clicked: %{private}@", ((NSButton*)sender).title);
 
     //init path
     // and check
@@ -353,7 +353,7 @@ bail:
         if(NSNotFound != [endpointAddr rangeOfString:@"*"].location)
         {
             //dbg msg
-            os_log_debug(logHandle, "endpoint address '%{public}@' contains a glob ('*')", endpointAddr);
+            os_log_debug(logHandle, "endpoint address '%{private}@' contains a glob ('*')", endpointAddr);
 
             //glob
             endpointType = EndpointTypeGlob;
@@ -363,7 +363,7 @@ bail:
         else if(YES == isAddressRange(endpointAddr))
         {
             //dbg msg
-            os_log_debug(logHandle, "endpoint address '%{public}@' is a CIDR/range", endpointAddr);
+            os_log_debug(logHandle, "endpoint address '%{private}@' is a CIDR/range", endpointAddr);
 
             //cidr
             endpointType = EndpointTypeCIDR;

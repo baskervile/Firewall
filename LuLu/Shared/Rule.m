@@ -53,7 +53,7 @@ EndpointType endpointTypeForAddress(NSString* address)
         NSURL* remoteURL = nil;
         
         //dbg msg
-        os_log_debug(logHandle, "creating rule with: %{public}@", info);
+        os_log_debug(logHandle, "creating rule with: %{private}@", info);
         
         //create UUID
         self.uuid = [[NSUUID UUID] UUIDString];
@@ -211,7 +211,7 @@ EndpointType endpointTypeForAddress(NSString* address)
     }
     
     //dbg msg
-    os_log_debug(logHandle, "generated rule key: %{public}@", key);
+    os_log_debug(logHandle, "generated rule key: %{private}@", key);
 
     return key;
 }

@@ -79,7 +79,7 @@ enum menuItems
             parent = getRealParent(getpid());
             
             //dbg msg
-            os_log_debug(logHandle, "(real) parent: %{public}@", parent);
+            os_log_debug(logHandle, "(real) parent: %{private}@", parent);
             
             //only show popover if we're not autolaunched
             if(YES != [parent[@"CFBundleIdentifier"] isEqualToString:@"com.apple.loginwindow"])
@@ -248,7 +248,7 @@ enum menuItems
 -(void)handler:(id)sender
 {
     //dbg msg
-    os_log_debug(logHandle, "handling button click: %{public}@ (%ld)", ((NSButton*)sender).title, ((NSButton*)sender).tag);
+    os_log_debug(logHandle, "handling button click: %{private}@ (%ld)", ((NSButton*)sender).title, ((NSButton*)sender).tag);
     
     //handle user selection
     switch(((NSMenuItem*)sender).tag)
@@ -363,14 +363,14 @@ enum menuItems
             path = [NSURL fileURLWithPath:[NSBundle.mainBundle.resourcePath stringByAppendingPathComponent:NETWORK_MONITOR]];
             
             //dbg msg
-            os_log_debug(logHandle, "launching network monitor (%{public}@)", path);
+            os_log_debug(logHandle, "launching network monitor (%{private}@)", path);
             
             //launch
             // with args
             if(nil == [NSWorkspace.sharedWorkspace launchApplicationAtURL:path options:0 configuration:[NSDictionary dictionaryWithObject:@[@"-lulu"] forKey:NSWorkspaceLaunchConfigurationArguments] error:&error])
             {
                 //err msg
-                os_log_error(logHandle, "ERROR: failed to launch network monitor, %{public}@, (error: %{public}@)", path, error);
+                os_log_error(logHandle, "ERROR: failed to launch network monitor, %{private}@, (error: %{private}@)", path, error);
             }
             
             break;
@@ -498,7 +498,7 @@ bail:
     NSString* profile = sender.representedObject;
     
     //dbg msg
-    os_log_debug(logHandle, "user wants to change profile to '%{public}@'", profile ? profile : @"Default");
+    os_log_debug(logHandle, "user wants to change profile to '%{private}@'", profile ? profile : @"Default");
     
     //set profile via XPC
     // nil is ok, means (re)set to default

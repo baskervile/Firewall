@@ -27,7 +27,7 @@ extern NSMutableDictionary* alerts;
 -(void)alertShow:(NSDictionary*)alert reply:(void (^)(NSDictionary*))reply
 {
     //dbg msg
-    os_log_debug(logHandle, "daemon invoked user XPC method, '%s', with %{public}@", __PRETTY_FUNCTION__, alert);
+    os_log_debug(logHandle, "daemon invoked user XPC method, '%s', with %{private}@", __PRETTY_FUNCTION__, alert);
     
     //on main (ui) thread
     dispatch_sync(dispatch_get_main_queue(), ^{
@@ -109,7 +109,7 @@ extern NSMutableDictionary* alerts;
             responses = resolveAddress(address);
             
             //dbg msg
-            os_log_debug(logHandle, "resolved %{public}@ to %{public}@", address, responses);
+            os_log_debug(logHandle, "resolved %{private}@ to %{private}@", address, responses);
          
             //sync to add to alert window(s)
             @synchronized(alerts)

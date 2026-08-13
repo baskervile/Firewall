@@ -167,7 +167,7 @@ bail:
 -(void)addShown:(NSDictionary*)alert
 {
     //dbg msg
-    os_log_debug(logHandle, "adding alert to 'shown': %{public}@ -> %{public}@", alert[KEY_KEY], alert);
+    os_log_debug(logHandle, "adding alert to 'shown': %{private}@ -> %{private}@", alert[KEY_KEY], alert);
     
     //add alert
     @synchronized(self.shownAlerts)
@@ -192,7 +192,7 @@ bail:
         if(nil != key)
         {
             //dbg msg
-            os_log_debug(logHandle, "removing alert from 'shown' for key: %{public}@", key);
+            os_log_debug(logHandle, "removing alert from 'shown' for key: %{private}@", key);
 
             //remove
             [self.shownAlerts removeObjectForKey:key];
@@ -218,7 +218,7 @@ bail:
     BOOL delivered = NO;
 
     //dbg msg
-    os_log_debug(logHandle, "delivering alert %{public}@", alert);
+    os_log_debug(logHandle, "delivering alert %{private}@", alert);
 
     //send via XPC to user
     if(YES != (delivered = [self.xpcUserClient deliverAlert:alert reply:reply]))

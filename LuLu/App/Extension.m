@@ -121,7 +121,7 @@ bail:
             wasError = YES;
             
             //err msg
-            os_log_error(logHandle, "ERROR: 'loadFromPreferencesWithCompletionHandler' failed with %{public}@", error);
+            os_log_error(logHandle, "ERROR: 'loadFromPreferencesWithCompletionHandler' failed with %{private}@", error);
         }
     
         //signal semaphore
@@ -196,7 +196,7 @@ bail:
             wasError = YES;
             
             //err msg
-            os_log_error(logHandle, "ERROR: 'saveToPreferencesWithCompletionHandler' failed with %{public}@", error);
+            os_log_error(logHandle, "ERROR: 'saveToPreferencesWithCompletionHandler' failed with %{private}@", error);
         }
         
         //signal semaphore
@@ -232,7 +232,7 @@ bail:
 -(OSSystemExtensionReplacementAction)request:(nonnull OSSystemExtensionRequest *)request actionForReplacingExtension:(nonnull OSSystemExtensionProperties *)existing withExtension:(nonnull OSSystemExtensionProperties *)ext
 {
     //dbg msg
-    os_log_debug(logHandle, "method '%s' invoked with %{public}@, %{public}@ -> %{public}@", __PRETTY_FUNCTION__, request.identifier, existing.bundleShortVersion, ext.bundleShortVersion);
+    os_log_debug(logHandle, "method '%s' invoked with %{private}@, %{private}@ -> %{private}@", __PRETTY_FUNCTION__, request.identifier, existing.bundleShortVersion, ext.bundleShortVersion);
     
     return OSSystemExtensionReplacementActionReplace;
 }
@@ -241,7 +241,7 @@ bail:
 -(void)request:(nonnull OSSystemExtensionRequest *)request didFailWithError:(nonnull NSError *)error
 {
     //err msg
-    os_log_error(logHandle, "ERROR: method '%s' invoked with %{public}@, %{public}@", __PRETTY_FUNCTION__, request, error);
+    os_log_error(logHandle, "ERROR: method '%s' invoked with %{private}@, %{private}@", __PRETTY_FUNCTION__, request, error);
     
     //invoke reply
     self.replyBlock(error);
@@ -258,7 +258,7 @@ bail:
     NSError* error = nil;
     
     //dbg msg
-    os_log_debug(logHandle, "method '%s' invoked with %{public}@, %ld", __PRETTY_FUNCTION__, request, (long)result);
+    os_log_debug(logHandle, "method '%s' invoked with %{private}@, %ld", __PRETTY_FUNCTION__, request, (long)result);
    
     //request will complete after reboot?
     if(OSSystemExtensionRequestWillCompleteAfterReboot == result)
@@ -300,7 +300,7 @@ bail:
 -(void)requestNeedsUserApproval:(nonnull OSSystemExtensionRequest *)request {
     
     //dbg msg
-    os_log_debug(logHandle, "method '%s' invoked with %{public}@", __PRETTY_FUNCTION__, request);
+    os_log_debug(logHandle, "method '%s' invoked with %{private}@", __PRETTY_FUNCTION__, request);
     
     //not user launched?
     // show alert on desktop

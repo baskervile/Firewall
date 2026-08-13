@@ -18,6 +18,9 @@
 //get preferences
 -(void)getPreferences:(void (^)(NSDictionary*))reply;
 
+//get runtime status for the configured allow/block lists
+-(void)getListStatus:(void (^)(NSDictionary*))reply;
+
 //update preferences
 -(void)updatePreferences:(NSDictionary*)preferences reply:(void (^)(NSDictionary*))reply;
 

@@ -75,7 +75,7 @@ extern os_log_t logHandle;
         if(0 == self.pid)
         {
             //err msg
-            os_log_error(logHandle, "ERROR: audit token contains no pid (0), e.g. kernel or malformed token\n");
+            os_log_error(logHandle, "ERROR: 'audit_token_to_pid' returned NULL\n");
             return nil;
         }
         
@@ -197,7 +197,7 @@ extern os_log_t logHandle;
     }
     
     //dbg msg
-    os_log_debug(logHandle, "generated process key: %{public}@", key);
+    os_log_debug(logHandle, "generated process key: %{private}@", key);
 
     return key;
 }
@@ -483,7 +483,7 @@ bail:
     else
     {
         //error msg
-        os_log_error(logHandle, "ERROR: invalid code signing information for %{public}@: %{public}@", self.path, extractedSigningInfo);
+        os_log_error(logHandle, "ERROR: invalid code signing information for %{private}@: %{private}@", self.path, extractedSigningInfo);
     }
 
     return;

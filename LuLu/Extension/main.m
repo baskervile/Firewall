@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
     logHandle = os_log_create(BUNDLE_ID, "extension");
     
     //dbg msg
-    os_log_debug(logHandle, "started: %{public}@ (pid: %d / uid: %d)", NSProcessInfo.processInfo.arguments.firstObject, getpid(), getuid());
+    os_log_debug(logHandle, "started: %{private}@ (pid: %d / uid: %d)", NSProcessInfo.processInfo.arguments.firstObject, getpid(), getuid());
     
     //start sysext
     // Apple notes, "call [this] as early as possible"
@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
         if(YES != [[NSFileManager defaultManager] createDirectoryAtPath:INSTALL_DIRECTORY withIntermediateDirectories:YES attributes:nil error:NULL])
         {
             //err msg
-            os_log_error(logHandle, "ERROR: failed to create install directory, %{public}@", INSTALL_DIRECTORY);
+            os_log_error(logHandle, "ERROR: failed to create install directory, %{private}@", INSTALL_DIRECTORY);
             
             //bail
             goto bail;
@@ -82,7 +82,7 @@ int main(int argc, char *argv[])
     if(YES != [rules load])
     {
         //err msg
-        os_log_error(logHandle, "ERROR: failed to load rules from %{public}@ ...will exit", RULES_FILE);
+        os_log_error(logHandle, "ERROR: failed to load rules from %{private}@ ...will exit", RULES_FILE);
         
         //bail
         goto bail;

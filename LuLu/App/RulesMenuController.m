@@ -197,7 +197,7 @@ extern XPCDaemonClient* xpcDaemonClient;
             else
             {
                 //err msg
-                os_log_error(logHandle, "ERROR: failed to save rules: %{public}@", error);
+                os_log_error(logHandle, "ERROR: failed to save rules: %{private}@", error);
                 
                 //show alert
                 showAlert(NSAlertStyleWarning, NSLocalizedString(@"ERROR: Failed to export rules",@"ERROR: Failed to export rules"), NSLocalizedString(@"See log for (more) details",@"See log for (more) details"), @[NSLocalizedString(@"OK", @"OK")]);
@@ -276,7 +276,7 @@ extern XPCDaemonClient* xpcDaemonClient;
     if(nil == data)
     {
         //err msg
-        os_log_error(logHandle, "ERROR: failed to load (imported) rules from %{public}@ (error: %{public}@)", panel.URL.path, error);
+        os_log_error(logHandle, "ERROR: failed to load (imported) rules from %{private}@ (error: %{private}@)", panel.URL.path, error);
         goto bail;
     }
     
@@ -288,7 +288,7 @@ extern XPCDaemonClient* xpcDaemonClient;
         if(nil == importedRules)
         {
             //error msg
-            os_log_error(logHandle, "ERROR: failed to convert imported rules from JSON (error: %{public}@)", error);
+            os_log_error(logHandle, "ERROR: failed to convert imported rules from JSON (error: %{private}@)", error);
             goto bail;
         }
     }
@@ -302,7 +302,7 @@ extern XPCDaemonClient* xpcDaemonClient;
     if(YES != [importedRules isKindOfClass:[NSDictionary class]])
     {
         //err msg
-        os_log_error(logHandle, "ERROR: invalid format for imported rules (should be a dictionary, not a %{public}@)", importedRules.className);
+        os_log_error(logHandle, "ERROR: invalid format for imported rules (should be a dictionary, not a %{private}@)", importedRules.className);
         goto bail;
     }
     
@@ -316,7 +316,7 @@ extern XPCDaemonClient* xpcDaemonClient;
         if(YES != [importedRules[key] isKindOfClass:[NSArray class]])
         {
             //err msg
-            os_log_error(logHandle, "ERROR: invalid format for imported rules (should be an array, not a %{public}@)", [importedRules[key] className]);
+            os_log_error(logHandle, "ERROR: invalid format for imported rules (should be an array, not a %{private}@)", [importedRules[key] className]);
             goto bail;
         }
         
@@ -330,7 +330,7 @@ extern XPCDaemonClient* xpcDaemonClient;
             if(nil == rule)
             {
                 //err msg
-                os_log_error(logHandle, "ERROR: invalid format for imported rule: %{public}@", importedRule);
+                os_log_error(logHandle, "ERROR: invalid format for imported rule: %{private}@", importedRule);
                 
                 //skip
                 continue;
@@ -371,7 +371,7 @@ extern XPCDaemonClient* xpcDaemonClient;
     if(nil == archivedRules)
     {
         //err msg
-        os_log_error(logHandle, "ERROR: failed to archive rules: %{public}@", error);
+        os_log_error(logHandle, "ERROR: failed to archive rules: %{private}@", error);
     }
     
     //dbg msg

@@ -234,7 +234,7 @@ bail:
         self.csInfo = extractedSigningInfo;
     }
     //dbg msg
-    else os_log_debug(logHandle, "invalid code signing information for %{public}@: %{public}@", self.path, extractedSigningInfo);
+    else os_log_debug(logHandle, "invalid code signing information for %{private}@: %{private}@", self.path, extractedSigningInfo);
     
     return;
 }

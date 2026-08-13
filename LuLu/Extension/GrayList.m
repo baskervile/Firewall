@@ -69,7 +69,7 @@ extern os_log_t logHandle;
         }
         
         //dbg msg
-        os_log_debug(logHandle, "loaded 'gray-listed' binaries: %{public}@", self.graylistedBinaries);
+        os_log_debug(logHandle, "loaded 'gray-listed' binaries: %{private}@", self.graylistedBinaries);
     }
     
     return self;
@@ -84,7 +84,7 @@ extern os_log_t logHandle;
     BOOL grayListed = NO;
     
     //dbg info
-    os_log_debug(logHandle, "checking if %{public}@ is graylisted (signing info: %{public}@)", process.path, process.csInfo);
+    os_log_debug(logHandle, "checking if %{private}@ is graylisted (signing info: %{private}@)", process.path, process.csInfo);
     
     //no code signing identifier?
     if(nil == process.csInfo[KEY_CS_ID]) goto bail;

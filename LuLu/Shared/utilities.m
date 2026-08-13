@@ -59,7 +59,7 @@ NSString* getBundleExecutable(NSString* appPath)
     if(nil == appBundle)
     {
         //err msg
-        os_log_error(logHandle, "ERROR: failed to load app bundle for %{public}@", appPath);
+        os_log_error(logHandle, "ERROR: failed to load app bundle for %{private}@", appPath);
         
         //bail
         goto bail;
@@ -683,7 +683,7 @@ NSImage* getIconForProcess(NSString* item)
         [path.pathExtension isEqualToString:@"app"])
     {
         //dbg msg
-        os_log_debug(logHandle, "%{public}@ appears to be a helper app", path);
+        os_log_debug(logHandle, "%{private}@ appears to be a helper app", path);
         
         NSBundle* bundle = [NSBundle bundleWithPath:path];
         NSString* iconFile = [bundle objectForInfoDictionaryKey:@"CFBundleIconFile"];
@@ -705,7 +705,7 @@ NSImage* getIconForProcess(NSString* item)
                     path = currentPath;
                     
                     //dbg msg
-                    os_log_debug(logHandle, "will use parents path for icon: %{public}@", path);
+                    os_log_debug(logHandle, "will use parents path for icon: %{private}@", path);
                     
                     break;
                 }
@@ -949,7 +949,7 @@ BOOL toggleLoginItem(NSURL* loginItem, int toggleFlag)
     if(ACTION_INSTALL_FLAG == toggleFlag)
     {
         //dbg msg
-        os_log_debug(logHandle, "adding login item: %{public}@", loginItem.path);
+        os_log_debug(logHandle, "adding login item: %{private}@", loginItem.path);
         
         //add
         loginItemRef = LSSharedFileListInsertItemURL(loginItemsRef, kLSSharedFileListItemLast, NULL, NULL, (__bridge CFURLRef)(loginItem), NULL, NULL);
@@ -979,7 +979,7 @@ BOOL toggleLoginItem(NSURL* loginItem, int toggleFlag)
     else
     {
         //dbg msg
-        os_log_debug(logHandle, "removing login item: %{public}@", loginItem.path);
+        os_log_debug(logHandle, "removing login item: %{private}@", loginItem.path);
         
         //grab all login items
         loginItems = LSSharedFileListCopySnapshot(loginItemsRef, nil);
@@ -1071,7 +1071,7 @@ NSDate* dateAdded(NSString* file)
     NSBundle* appBundle = nil;
     
     //dbg msg
-    os_log_debug(logHandle, "extracting 'kMDItemDateAdded' for %{public}@", file);
+    os_log_debug(logHandle, "extracting 'kMDItemDateAdded' for %{private}@", file);
     
     //try find an app bundle
     appBundle = findAppBundle(file);
@@ -1122,7 +1122,7 @@ NSDate* dateAdded(NSString* file)
     }
     
     //dbg msg
-    os_log_debug(logHandle, "extacted date, %{public}@, for %{public}@", date, file);
+    os_log_debug(logHandle, "extacted date, %{private}@, for %{private}@", date, file);
 
 bail:
     
@@ -1158,7 +1158,7 @@ NSMutableString* hashFile(NSString* path) {
     NSData* contents = [NSData dataWithContentsOfFile:path];
     if (!contents)
     {
-        os_log_error(logHandle, "ERROR: failed to read in %{public}@ for hashing", path);
+        os_log_error(logHandle, "ERROR: failed to read in %{private}@ for hashing", path);
         return nil;
     }
     
@@ -1418,7 +1418,7 @@ NSArray* resolveAddress(NSString* ipAddr)
     NSArray* hostNames = nil;
     
     //dbg msg
-    os_log_debug(logHandle, "(attempting to) reverse resolve %{public}@", ipAddr);
+    os_log_debug(logHandle, "(attempting to) reverse resolve %{private}@", ipAddr);
     
     //clear hints
     memset(&hints, 0x0, sizeof(hints));
@@ -1571,7 +1571,7 @@ BOOL isSimulatorApp(NSString* path)
     NSArray* supportedPlatforms = nil;
 
     //dbg msg
-    os_log_debug(logHandle, "checking if %{public}@ is a simulator application", path);
+    os_log_debug(logHandle, "checking if %{private}@ is a simulator application", path);
 
     //(try) get bundle
     // ...and check its supported platforms
@@ -1584,7 +1584,7 @@ BOOL isSimulatorApp(NSString* path)
             (0 != supportedPlatforms.count) )
         {
             //dbg msg
-            os_log_debug(logHandle, "supported platforms: %{public}@", supportedPlatforms);
+            os_log_debug(logHandle, "supported platforms: %{private}@", supportedPlatforms);
 
             //check if simulator app
             simulatorApp = [[NSSet setWithArray: supportedPlatforms] isSubsetOfSet: [NSSet setWithArray: @[@"iPhoneSimulator", @"AppleTVSimulator"]]];
@@ -1649,7 +1649,7 @@ BOOL isSimulatorBinary(NSString* path)
                         (PLATFORM_VISIONOSSIMULATOR == platform) )
                     {
                         //dbg msg
-                        os_log_debug(logHandle, "%{public}@ was built for simulator platform (%d)", path, platform);
+                        os_log_debug(logHandle, "%{private}@ was built for simulator platform (%d)", path, platform);
 
                         //set
                         simulatorBinary = YES;
@@ -1764,7 +1764,7 @@ BOOL matchesCSInfo(NSDictionary* csInfo_1, NSDictionary* csInfo_2)
     if(status_1 != status_2)
     {
         //dbg msg
-        os_log_error(logHandle, "ERROR: code signing mismatch (signing status): %{public}@ / %{public}@", csInfo_1, csInfo_2);
+        os_log_error(logHandle, "ERROR: code signing mismatch (signing status): %{private}@ / %{private}@", csInfo_1, csInfo_2);
         
         //bail
         goto bail;
@@ -1793,13 +1793,13 @@ BOOL matchesCSInfo(NSDictionary* csInfo_1, NSDictionary* csInfo_2)
             (signer_1 == AppStore && signer_2 == Apple) )
         {
             //dbg msg
-            os_log_error(logHandle, "ignoring case where Apple App moved to/from Mac App Store: %{public}@ / %{public}@", csInfo_1, csInfo_2);
+            os_log_error(logHandle, "ignoring case where Apple App moved to/from Mac App Store: %{private}@ / %{private}@", csInfo_1, csInfo_2);
         }
         //ok something really changed w/ signers
         else
         {
             //dbg msg
-            os_log_error(logHandle, "ERROR: code signing mismatch (signer): %{public}@ / %{public}@", csInfo_1, csInfo_2);
+            os_log_error(logHandle, "ERROR: code signing mismatch (signer): %{private}@ / %{private}@", csInfo_1, csInfo_2);
             
             //bail
             goto bail;
@@ -1826,7 +1826,7 @@ BOOL matchesCSInfo(NSDictionary* csInfo_1, NSDictionary* csInfo_2)
         (YES != [signingID_1 isEqualToString:signingID_2]) )
     {
         //dbg msg
-        os_log_error(logHandle, "ERROR: code signing mismatch (signing ID): %{public}@ / %{public}@", csInfo_1, csInfo_2);
+        os_log_error(logHandle, "ERROR: code signing mismatch (signing ID): %{private}@ / %{private}@", csInfo_1, csInfo_2);
         
         //bail
         goto bail;
@@ -1865,7 +1865,7 @@ BOOL matchesCSInfo(NSDictionary* csInfo_1, NSDictionary* csInfo_2)
             (YES != [leaf_1 isEqualToString:leaf_2]) )
         {
             //err msg
-            os_log_error(logHandle, "ERROR: code signing mismatch (leaf authority): %{public}@ / %{public}@", csInfo_1, csInfo_2);
+            os_log_error(logHandle, "ERROR: code signing mismatch (leaf authority): %{private}@ / %{private}@", csInfo_1, csInfo_2);
 
             //bail
             goto bail;
@@ -1895,7 +1895,7 @@ NSString* toEscapedJSON(NSString* input)
             (nil != error) )
         {
             //err msg
-            os_log_error(logHandle, "ERROR: failed to convert/escape %{public}@ to JSON (error: %{public}@)", input, error);
+            os_log_error(logHandle, "ERROR: failed to convert/escape %{private}@ to JSON (error: %{private}@)", input, error);
             
             goto bail;
         }
@@ -1903,7 +1903,7 @@ NSString* toEscapedJSON(NSString* input)
     @catch(NSException* exception)
     {
         //err msg
-        os_log_error(logHandle, "ERROR: failed to convert/escape %{public}@ to JSON (exception: %{public}@)", input, exception);
+        os_log_error(logHandle, "ERROR: failed to convert/escape %{private}@ to JSON (exception: %{private}@)", input, exception);
         goto bail;
     }
     

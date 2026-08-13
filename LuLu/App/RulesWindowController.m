@@ -211,7 +211,7 @@ extern XPCDaemonClient* xpcDaemonClient;
         currentRules = [xpcDaemonClient getRules];
         
         //dbg msg
-        os_log_debug(logHandle, "received %lu rules from daemon: %{public}@", (unsigned long)currentRules.count, currentRules.allKeys);
+        os_log_debug(logHandle, "received %lu rules from daemon: %{private}@", (unsigned long)currentRules.count, currentRules.allKeys);
         
         //sync rules
         @synchronized (self)
@@ -472,7 +472,7 @@ bail:
     Rule *rule = (Rule *)item;
 
     //dbg msg
-    os_log_debug(logHandle, "editing rule %{public}@", rule);
+    os_log_debug(logHandle, "editing rule %{private}@", rule);
 
     //edit (via add window)
     [self addRule:rule];
@@ -492,7 +492,7 @@ bail:
     NSDictionary* currentRules = nil;
     
     //dbg msg
-    os_log_debug(logHandle, "method '%s' invoked with %{public}@", __PRETTY_FUNCTION__, itemKey);
+    os_log_debug(logHandle, "method '%s' invoked with %{private}@", __PRETTY_FUNCTION__, itemKey);
     
     //alloc sheet
     self.itemPathsWindowController = [[ItemPathsWindowController alloc] initWithWindowNibName:@"ItemPaths"];
@@ -519,7 +519,7 @@ bail:
 -(IBAction)addRule:(id)sender
 {
     //dbg msg
-    os_log_debug(logHandle, "method '%s' invoked with %{public}@", __PRETTY_FUNCTION__, sender);
+    os_log_debug(logHandle, "method '%s' invoked with %{private}@", __PRETTY_FUNCTION__, sender);
     
     //alloc sheet
     self.addRuleWindowController = [[AddRuleWindowController alloc] initWithWindowNibName:@"AddRule"];
@@ -651,7 +651,7 @@ bail:
     if(0 != filter.length)
     {
         //dbg msg
-        os_log_debug(logHandle, "filtering on '%{public}@'", filter);
+        os_log_debug(logHandle, "filtering on '%{private}@'", filter);
     }
         
     //scan all rules
@@ -810,7 +810,7 @@ bail:
 bail:
     
     //dbg msg
-    os_log_debug(logHandle, "filtered rules: %{public}@", results.allKeys);
+    os_log_debug(logHandle, "filtered rules: %{private}@", results.allKeys);
     
     return results;
 }
@@ -1422,7 +1422,7 @@ bail:
     disableTitle = [NSString stringWithFormat:NSLocalizedString(@"Disable %@", @"Disable %@"), base];
     
     //dbg msg
-    os_log_debug(logHandle, "row: %ld, item: %{public}@", (long)row, item);
+    os_log_debug(logHandle, "row: %ld, item: %{private}@", (long)row, item);
 
     //alloc menu
     NSMenu *menu = [[NSMenu alloc] initWithTitle:@"Rule Menu"];
@@ -1495,7 +1495,7 @@ bail:
     Rule *rule = [self.outlineView itemAtRow:[sender.representedObject integerValue]];
     
     //dbg msg
-    os_log_debug(logHandle, "editing rule %{public}@", rule);
+    os_log_debug(logHandle, "editing rule %{private}@", rule);
     
     //edit (via add window)
     [self addRule:rule];
@@ -1528,7 +1528,7 @@ bail:
     }
     
     //dbg msg
-    os_log_debug(logHandle, "enabling rule %{public}@", rule);
+    os_log_debug(logHandle, "enabling rule %{private}@", rule);
     
     //enable rule via XPC
     // nil uuid, means toggle all rules for item (process)
@@ -1565,7 +1565,7 @@ bail:
     }
     
     //dbg msg
-    os_log_debug(logHandle, "disabling rule %{public}@", rule);
+    os_log_debug(logHandle, "disabling rule %{private}@", rule);
     
     //disable rule via XPC
     // nil uuid, means toggle all rules for item (process)
@@ -1609,7 +1609,7 @@ bail:
     }
     
     //dbg msg
-    os_log_debug(logHandle, "deleting rule key: %{public}@, rule uuid: %{public}@", rule.key, uuid);
+    os_log_debug(logHandle, "deleting rule key: %{private}@, rule uuid: %{private}@", rule.key, uuid);
     
     //remove rule via XPC
     // nil uuid, means delete all rules for item (process)

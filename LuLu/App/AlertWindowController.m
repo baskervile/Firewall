@@ -127,7 +127,7 @@ extern NSMutableDictionary* alerts;
         self.processHierarchy = generateProcessHierarchy(processID);
         
         //dbg msg
-        os_log_debug(logHandle, "(re)generated process hierarchy: %{public}@", self.processHierarchy);
+        os_log_debug(logHandle, "(re)generated process hierarchy: %{private}@", self.processHierarchy);
     }
     else
     {
@@ -449,7 +449,7 @@ bail:
     signingInfo = self.alert[KEY_CS_INFO];
     
     //dbg msg
-    os_log_debug(logHandle, "signing info: %{public}@", signingInfo);
+    os_log_debug(logHandle, "signing info: %{private}@", signingInfo);
     
     //none?
     // just set to unknown
@@ -573,7 +573,7 @@ bail:
     if(hash) {
         
         //dbg msg
-        os_log_debug(logHandle, "%{public}@ hashed to %{public}@ for VT", path, hash);
+        os_log_debug(logHandle, "%{private}@ hashed to %{private}@ for VT", path, hash);
         
         //open/show in browser
         [NSWorkspace.sharedWorkspace openURL:[NSURL URLWithString:[NSString stringWithFormat:@"https://www.virustotal.com/gui/file/%@", hash]]];
@@ -819,7 +819,7 @@ bail:
         expiration = [NSDate dateWithTimeIntervalSinceNow:totalSeconds];
         
         //dbg msg
-        os_log_debug(logHandle, "rule expiration: %{public}@", expiration);
+        os_log_debug(logHandle, "rule expiration: %{private}@", expiration);
         
         //add expiration
         alertResponse[KEY_DURATION_EXPIRATION] = expiration;
@@ -836,7 +836,7 @@ bail:
     [self.window close];
     
     //dbg msg
-    os_log_debug(logHandle, "replying to alert %{public}@", alertResponse);
+    os_log_debug(logHandle, "replying to alert %{private}@", alertResponse);
     
     //reply
     self.reply(alertResponse);

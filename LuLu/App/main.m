@@ -37,8 +37,8 @@ int main(int argc, const char * argv[]) {
         logHandle = os_log_create(BUNDLE_ID, "application");
         
         //dbg msg(s)
-        os_log_debug(logHandle, "started: %{public}@ (pid: %d / uid: %d)", NSProcessInfo.processInfo.arguments.firstObject, getpid(), getuid());
-        os_log_debug(logHandle, "arguments: %{public}@", NSProcessInfo.processInfo.arguments);
+        os_log_debug(logHandle, "started: %{private}@ (pid: %d / uid: %d)", NSProcessInfo.processInfo.arguments.firstObject, getpid(), getuid());
+        os_log_debug(logHandle, "arguments: %{private}@", NSProcessInfo.processInfo.arguments);
     
         /* cmdline interface - for install/upgrade/uninstall */
         

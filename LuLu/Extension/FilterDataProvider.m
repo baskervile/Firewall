@@ -62,13 +62,13 @@ extern BlockOrAllowList* blockList;
     {
         //init cache
         cache = [[NSCache alloc] init];
-        
+
         //set cache limit
         self.cache.countLimit = 2048;
-        
+
         //init gray list
         grayList = [[GrayList alloc] init];
-        
+
         //alloc related flows
         self.relatedFlows = [NSMutableDictionary dictionary];
 
@@ -92,7 +92,7 @@ extern BlockOrAllowList* blockList;
 
 //start filter
 -(void)startFilterWithCompletionHandler:(void (^)(NSError *error))completionHandler {
-    
+
     //rules
     NSMutableArray<NEFilterRule*>* rules = nil;
 
@@ -163,10 +163,10 @@ extern BlockOrAllowList* blockList;
 
 //stop filter
 -(void)stopFilterWithReason:(NEProviderStopReason)reason completionHandler:(void (^)(void))completionHandler {
-    
+
     //log msg
     os_log_debug(logHandle, "method '%s' invoked with %ld", __PRETTY_FUNCTION__, (long)reason);
-    
+
     //extra dbg info
     if(NEProviderStopReasonUserInitiated == reason)
     {
@@ -187,28 +187,28 @@ extern BlockOrAllowList* blockList;
 
     //required
     completionHandler();
-    
+
     return;
 }
 
 //handle flow
 -(NEFilterNewFlowVerdict *)handleNewFlow:(NEFilterFlow *)flow {
-    
+
     //socket flow
     NEFilterSocketFlow* socketFlow = nil;
-    
+
     //remote endpoint
     NWHostEndpoint* remoteEndpoint = nil;
-    
+
     //verdict
     NEFilterNewFlowVerdict* verdict = nil;
-    
+
     //log msg
     os_log_debug(logHandle, "method '%s' invoked", __PRETTY_FUNCTION__);
-    
+
     //init verdict to allow
     verdict = [NEFilterNewFlowVerdict allowVerdict];
-    
+
     //no prefs (yet) or disabled
     // just allow the flow (don't block)
     if( (0 == preferences.preferences.count) ||
@@ -216,64 +216,64 @@ extern BlockOrAllowList* blockList;
     {
         //dbg msg
         os_log_debug(logHandle, "no prefs (yet) || disabled, so allowing flow");
-        
+
         //bail
         goto bail;
     }
-    
+
     //typecast
     socketFlow = (NEFilterSocketFlow*)flow;
-    
+
     //log msg
-    //os_log_debug(logHandle, "flow: %{public}@", flow);
-    
+    //os_log_debug(logHandle, "flow: %{private}@", flow);
+
     //extract remote endpoint
     remoteEndpoint = (NWHostEndpoint*)socketFlow.remoteEndpoint;
-    
+
     //log msg
-    os_log_debug(logHandle, "remote endpoint: %{public}@ / url: %{public}@", remoteEndpoint, flow.URL);
-    
+    os_log_debug(logHandle, "remote endpoint: %{private}@ / url: %{private}@", remoteEndpoint, flow.URL);
+
     //ignore non-outbound traffic
     // even though we init'd `NETrafficDirectionOutbound`, sometimes get inbound traffic :|
     if(NETrafficDirectionOutbound != socketFlow.direction)
     {
         //log msg
         os_log_debug(logHandle, "ignoring non-outbound traffic (direction: %ld)", (long)socketFlow.direction);
-           
+
         //bail
         goto bail;
     }
-    
+
     //process flow
     // determine verdict/deliver alert
     switch([self processEvent:flow]) {
-            
+
         //allow
         case kFlowVerdictAllow:
             os_log_debug(logHandle, "verdict: allow");
             verdict = [NEFilterNewFlowVerdict allowVerdict];
             break;
-        
+
         //block
         case kFlowVerdictBlock:
             os_log_debug(logHandle, "verdict: block");
             verdict = [NEFilterNewFlowVerdict dropVerdict];
             break;
-            
+
         //pause
         case kFlowVerdictPause:
             os_log_debug(logHandle, "verdict: pause");
             verdict = [NEFilterNewFlowVerdict pauseVerdict];
             break;
-            
+
         //related
         // pause & save
         case kFlowVerdictRelated:
         {
             os_log_debug(logHandle, "verdict: related");
-            
+
             verdict = [NEFilterNewFlowVerdict pauseVerdict];
-            
+
             //save as related flow
             Process* process = [self.cache objectForKey:flow.sourceAppAuditToken];
             if(process) {
@@ -284,16 +284,16 @@ extern BlockOrAllowList* blockList;
             else {
                 verdict = [NEFilterNewFlowVerdict allowVerdict];
             }
-            
+
             break;
         }
     }
-    
+
     //log msg
-    os_log_debug(logHandle, "verdict: %{public}@", verdict);
-    
+    os_log_debug(logHandle, "verdict: %{private}@", verdict);
+
 bail:
-        
+
     return verdict;
 }
 
@@ -320,7 +320,7 @@ bail:
     if(YES != [rules add:[[Rule alloc] init:info] save:YES])
     {
         //err msg
-        os_log_error(logHandle, "ERROR: failed to add rule for %{public}@", info[KEY_PATH]);
+        os_log_error(logHandle, "ERROR: failed to add rule for %{private}@", info[KEY_PATH]);
     }
 
     return kFlowVerdictAllow;
@@ -332,62 +332,27 @@ bail:
 
     //process obj
     Process* process = nil;
-    
+
     //matching rule obj
     Rule* matchingRule = nil;
-    
+
     //console user
     NSString* consoleUser = nil;
-    
+
     //rule info
     NSMutableDictionary* info = nil;
-    
+
     //default to allow (on errors, etc)
     FlowVerdict verdict = kFlowVerdictAllow;
-    
+
     //(ext) install date
     static NSDate* installDate = nil;
-    
+
     //token
     static dispatch_once_t onceToken = 0;
-    
+
     //grab console user
     consoleUser = getConsoleUser();
-
-    //pid
-    // extracted from flow's audit token
-    pid_t pid = 0;
-
-    //extract pid
-    // note: 'audit_token_to_pid' is just a field accessor (can't fail), so only call it on a well-formed token
-    if(sizeof(audit_token_t) == flow.sourceAppAuditToken.length)
-    {
-        //extract
-        pid = audit_token_to_pid(*(audit_token_t*)flow.sourceAppAuditToken.bytes);
-    }
-
-    //CHECK:
-    // kernel (pid: 0) flow ...allow
-    if(0 == pid)
-    {
-        //log msg
-        os_log(logHandle, "flow originated from kernel (pid: 0), allowing: %{public}@", ((NEFilterSocketFlow*)flow).remoteEndpoint);
-
-        //bail
-        goto bail;
-    }
-
-    //CHECK:
-    // process already exited (or zombie'd)? ...deny
-    if(YES != isAlive(pid))
-    {
-        //dbg msg
-        os_log_debug(logHandle, "process %d has exited, DENYING flow", pid);
-
-        //block
-        verdict = kFlowVerdictBlock;
-        goto bail;
-    }
 
     //check cache for process
     process = [self.cache objectForKey:flow.sourceAppAuditToken];
@@ -404,32 +369,33 @@ bail:
     else
     {
         //dbg msg
-        os_log_debug(logHandle, "found process object in cache: %{public}@ (pid: %d)", process.path, process.pid);
+        os_log_debug(logHandle, "found process object in cache: %{private}@ (pid: %d)", process.path, process.pid);
     }
 
     //sanity check
-    // couldn't create process obj?
+    // process exited? deny
+    pid_t pid = audit_token_to_pid(*(audit_token_t*)flow.sourceAppAuditToken.bytes);
+    if(!isAlive(pid))
+    {
+        //dbg msg
+        os_log_debug(logHandle, "process %d has exited, DENYING flow", pid);
+
+        //block
+        verdict = kFlowVerdictBlock;
+        goto bail;
+    }
+
+    //sanity check
+    // no process? just allow...
     if(nil == process)
     {
-        //process exited mid-lookup? ...deny
-        if(YES != isAlive(pid))
-        {
-            //dbg msg
-            os_log_debug(logHandle, "process %d exited during lookup, DENYING flow", pid);
-
-            //block
-            verdict = kFlowVerdictBlock;
-            goto bail;
-        }
-
         //err msg
-        // process is alive, but still couldn't be examined ...fail open
-        os_log_error(logHandle, "ERROR: failed to create process for flow (pid: %d), will allow: %{public}@", pid, ((NEFilterSocketFlow*)flow).remoteEndpoint);
+        os_log_error(logHandle, "ERROR: failed to create process for flow, will allow");
 
         //bail
         goto bail;
     }
-        
+
     //CHECK:
     // different logged in user?
     // just allow flow, as we don't want to block their traffic
@@ -437,12 +403,12 @@ bail:
         (YES != [alerts.consoleUser isEqualToString:consoleUser]) )
     {
         //dbg msg
-        os_log_debug(logHandle, "current console user '%{public}@', is different than '%{public}@', so allowing flow: %{public}@", consoleUser, alerts.consoleUser, ((NEFilterSocketFlow*)flow).remoteEndpoint);
-        
+        os_log_debug(logHandle, "current console user '%{private}@', is different than '%{private}@', so allowing flow: %{private}@", consoleUser, alerts.consoleUser, ((NEFilterSocketFlow*)flow).remoteEndpoint);
+
         //all set
         goto bail;
     }
-    
+
     //CHECK:
     // client in (full) block mode? ...block!
     // unless there is an allow list set, which we'll check
@@ -454,103 +420,103 @@ bail:
         {
             //dbg msg
             os_log_debug(logHandle, "client in block mode, but flow matches item in allow list, so allowing");
-                
+
             //allow
             verdict = kFlowVerdictAllow;
-                
+
             //all set
             goto bail;
         }
-        
+
         //dbg msg
-        os_log_debug(logHandle, "client in block mode (and item not on allow list), so disallowing %d/%{public}@", process.pid, process.binary.name);
-        
+        os_log_debug(logHandle, "client in block mode (and item not on allow list), so disallowing %d/%{private}@", process.pid, process.binary.name);
+
         //deny
         verdict = kFlowVerdictBlock;
-        
+
         //all set
         goto bail;
     }
-        
+
     //CHECK:
     // client using (global) block list
     if( (YES == [preferences.preferences[PREF_USE_BLOCK_LIST] boolValue]) &&
         (0 != [preferences.preferences[PREF_BLOCK_LIST] length]) )
     {
         //dbg msg
-        os_log_debug(logHandle, "client is using block list '%{public}@' (%lu items) ...will check for match", preferences.preferences[PREF_BLOCK_LIST], (unsigned long)blockList.items.count);
-        
+        os_log_debug(logHandle, "client is using block list '%{private}@' (%lu items) ...will check for match", preferences.preferences[PREF_BLOCK_LIST], (unsigned long)blockList.items.count);
+
         //match in block list?
         if(YES == [blockList isMatch:(NEFilterSocketFlow*)flow])
         {
             //dbg msg
             os_log_debug(logHandle, "flow matches item in block list, so denying");
-            
+
             //deny
             verdict = kFlowVerdictBlock;
-            
+
             //all set
             goto bail;
         }
         //dbg msg
         else os_log_debug(logHandle, "remote endpoint/URL not on block list...");
     }
-    
+
     //CHECK:
     // client using (global) allow list
     if( (YES == [preferences.preferences[PREF_USE_ALLOW_LIST] boolValue]) &&
         (0 != [preferences.preferences[PREF_ALLOW_LIST] length]) )
     {
         //dbg msg
-        os_log_debug(logHandle, "client is using allow list '%{public}@' (%lu items) ...will check for match", preferences.preferences[PREF_ALLOW_LIST], (unsigned long)allowList.items.count);
-        
+        os_log_debug(logHandle, "client is using allow list '%{private}@' (%lu items) ...will check for match", preferences.preferences[PREF_ALLOW_LIST], (unsigned long)allowList.items.count);
+
         //match in allow list?
         if(YES == [allowList isMatch:(NEFilterSocketFlow*)flow])
         {
             //dbg msg
             os_log_debug(logHandle, "flow matches item in allow list, so allowing");
-            
+
             //allow
             verdict = kFlowVerdictAllow;
-            
+
             //all set
             goto bail;
         }
-        
+
         //dbg msg
         else os_log_debug(logHandle, "remote endpoint/URL not on allow list...");
     }
-    
+
     //CHECK:
     // allow localhost enabled?
     if([preferences.preferences[PREF_ALLOW_LOCALHOST] boolValue])
     {
         NEFilterSocketFlow* socketFlow = (NEFilterSocketFlow*)flow;
         NWHostEndpoint* remoteEndpoint = (NWHostEndpoint*)socketFlow.remoteEndpoint;
-        
+
         //localhost?
         if([self isLocalhostHostname:remoteEndpoint.hostname]) {
-            
-            os_log_debug(logHandle, "localhost allowed (preferences), so allowing loopback to %{public}@", remoteEndpoint);
-            
+
+            os_log_debug(logHandle, "localhost allowed (preferences), so allowing loopback to %{private}@", remoteEndpoint);
+
             //allow
             verdict = kFlowVerdictAllow;
-            
+
             //all set
             goto bail;
         }
     }
-    
+
     //CHECK:
     // check for existing rule
-    
+
     //existing rule for process?
     matchingRule = [rules find:process flow:(NEFilterSocketFlow*)flow];
     if(nil != matchingRule)
     {
         //dbg msg
-        os_log_debug(logHandle, "found matching rule for %d/%{public}@: %{public}@", process.pid, process.binary.name, matchingRule);
-        
+        os_log_debug(logHandle, "found matching rule for %d/%{private}@: %{private}@", process.pid, process.binary.name, matchingRule);
+
         //matching rule !global/!directory?
         // add its 'external' path (as might be different than original)
         if( (YES != matchingRule.isGlobal.boolValue) &&
@@ -563,20 +529,20 @@ bail:
                 [rules addPath:process.path forKey:process.key];
             }
         }
-        
+
         //deny?
         // otherwise will default to allow
         if(RULE_STATE_BLOCK == matchingRule.action.intValue)
         {
             //dbg msg
             os_log_debug(logHandle, "setting verdict to: BLOCK");
-            
+
             //deny
             verdict = kFlowVerdictBlock;
         }
         //allow (msg)
         else os_log_debug(logHandle, "rule says: ALLOW");
-    
+
         //all set
         goto bail;
     }
@@ -584,7 +550,7 @@ bail:
     /* NO MATCHING RULE FOUND */
 
     //dbg msg
-    os_log_debug(logHandle, "no (saved) rule found for %d/%{public}@", process.pid, process.binary.name);
+    os_log_debug(logHandle, "no (saved) rule found for %d/%{private}@", process.pid, process.binary.name);
 
     //CHECK:
     // client in passive mode?
@@ -593,56 +559,56 @@ bail:
     {
         //dbg msg
         os_log_debug(logHandle, "client in passive mode...");
-        
+
         //user action: allow?
         if(PREF_PASSIVE_MODE_ALLOW == [preferences.preferences[PREF_PASSIVE_MODE_ACTION] integerValue])
         {
             //dbg msg
-            os_log_debug(logHandle, "passive mode: action is 'allow', so allowing %d/%{public}@", process.pid, process.binary.name);
-            
+            os_log_debug(logHandle, "passive mode: action is 'allow', so allowing %d/%{private}@", process.pid, process.binary.name);
+
             //allow
             verdict = kFlowVerdictAllow;
         }
-        
+
         //user action: block?
         else
         {
             //dbg msg
-            os_log_debug(logHandle, "passive mode: action is 'block', so blocking %d/%{public}@", process.pid, process.binary.name);
-            
+            os_log_debug(logHandle, "passive mode: action is 'block', so blocking %d/%{private}@", process.pid, process.binary.name);
+
             //block
             verdict = kFlowVerdictBlock;
         }
-        
+
         //create rule?
         if(PREF_PASSIVE_MODE_RULES_YES == [preferences.preferences[PREF_PASSIVE_MODE_RULES] integerValue])
         {
             //dbg msg
             os_log_debug(logHandle, "passive mode: create rules is set, so creating rule for new connection");
-            
+
             //extract remote endpoint information
             NWHostEndpoint* remoteEndpoint = (NWHostEndpoint*)((NEFilterSocketFlow*)flow).remoteEndpoint;
-            
+
             //init info for rule creation with specific endpoint information
             info = [@{KEY_PATH:process.path, KEY_TYPE:@RULE_TYPE_PASSIVE} mutableCopy];
-            
+
             //get best hostname (prioritizes domain names over IP addresses)
             NSString* bestHostname = [self getBestHostnameFromFlow:(NEFilterSocketFlow*)flow];
-            
+
             //add endpoint address (hostname) if available
             if(0!= bestHostname.length) {
                 info[KEY_ENDPOINT_ADDR] = bestHostname;
             } else {
                 info[KEY_ENDPOINT_ADDR] = VALUE_ANY;
             }
-            
+
             //add endpoint port if available
             if(0 != remoteEndpoint.port.length) {
                 info[KEY_ENDPOINT_PORT] = remoteEndpoint.port;
             } else {
                 info[KEY_ENDPOINT_PORT] = VALUE_ANY;
             }
-            
+
             //add protocol if available
             if(((NEFilterSocketFlow*)flow).socketProtocol > 0)
             {
@@ -651,13 +617,13 @@ bail:
 
             //add process cs info?
             if(nil != process.csInfo) info[KEY_CS_INFO] = process.csInfo;
-            
+
             //add action: allow
             if(PREF_PASSIVE_MODE_ALLOW == [preferences.preferences[PREF_PASSIVE_MODE_ACTION] integerValue])
             {
                 //dbg msg
                 os_log_debug(logHandle, "passive mode: creating rule with 'allow'");
-                
+
                 //allow
                 info[KEY_ACTION] = @RULE_STATE_ALLOW;
             }
@@ -666,21 +632,21 @@ bail:
             {
                 //dbg msg
                 os_log_debug(logHandle, "passive mode: creating rule with 'block'");
-                
+
                 //block
                 info[KEY_ACTION] = @RULE_STATE_BLOCK;
             }
-            
+
             //create and add rule
             if(YES != [rules add:[[Rule alloc] init:info] save:YES])
             {
                 //err msg
-                os_log_error(logHandle, "ERROR: failed to add (passive) rule for %{public}@", info[KEY_PATH]);
-                 
+                os_log_error(logHandle, "ERROR: failed to add (passive) rule for %{private}@", info[KEY_PATH]);
+
                 //bail
                 goto bail;
             }
-            
+
             //tell user rules changed
             [alerts.xpcUserClient rulesChanged];
         }
@@ -690,11 +656,11 @@ bail:
             //dbg msg
             os_log_debug(logHandle, "passive mode: create rules is not set...");
         }
-        
+
         //all set
         goto bail;
     }
-    
+
     //dbg msg
     os_log_debug(logHandle, "client not in passive mode...");
 
@@ -728,16 +694,16 @@ bail:
     if(YES == [alerts isRelated:process])
     {
         //dbg msg
-        os_log_debug(logHandle, "an alert is shown for process %d/%{public}@, so holding off delivering for now...", process.pid, process.binary.name);
-        
+        os_log_debug(logHandle, "an alert is shown for process %d/%{private}@, so holding off delivering for now...", process.pid, process.binary.name);
+
         //related
         // will pause
         verdict = kFlowVerdictRelated;
-        
+
         //bail
         goto bail;
     }
-    
+
     //dbg msg
     os_log_debug(logHandle, "no related alert, currently shown...");
 
@@ -756,13 +722,13 @@ bail:
     {
         //dbg msg
         os_log_debug(logHandle, "'Allow Apple' preference is set, will check if is an Apple binary");
-        
+
         //signed by Apple?
         if(Apple == [process.csInfo[KEY_CS_SIGNER] intValue])
         {
             //dbg msg
             os_log_debug(logHandle, "is an Apple binary...");
-            
+
             //graylisted item?
             // pause and alert user (or, if no client, allow + create a passive rule)
             if(YES == [self.grayList isGrayListed:process])
@@ -776,7 +742,7 @@ bail:
                 }
 
                 //dbg msg
-                os_log_debug(logHandle, "while signed by apple, %d/%{public}@ is gray listed, so will alert", process.pid, process.binary.name);
+                os_log_debug(logHandle, "while signed by apple, %d/%{private}@ is gray listed, so will alert", process.pid, process.binary.name);
 
                 //pause
                 verdict = kFlowVerdictPause;
@@ -796,7 +762,7 @@ bail:
                 }
 
                 //dbg msg
-                os_log_debug(logHandle, "while signed by apple, %d/%{public}@ has other (non-matching) rules, so will alert", process.pid, process.binary.name);
+                os_log_debug(logHandle, "while signed by apple, %d/%{private}@ has other (non-matching) rules, so will alert", process.pid, process.binary.name);
 
                 //pause
                 verdict = kFlowVerdictPause;
@@ -809,39 +775,39 @@ bail:
             else
             {
                 //dbg msg
-                os_log_debug(logHandle, "due to preferences, allowing (non-graylisted) apple process %d/%{public}@", process.pid, process.path);
-                
+                os_log_debug(logHandle, "due to preferences, allowing (non-graylisted) apple process %d/%{private}@", process.pid, process.path);
+
                 //init for (rule) info
                 // type: apple, action: allow
                 info = [@{KEY_PATH:process.path, KEY_ACTION:@RULE_STATE_ALLOW, KEY_TYPE:@RULE_TYPE_APPLE} mutableCopy];
-                
+
                 //add process cs info
                 if(nil != process.csInfo)
                 {
                     //add
                     info[KEY_CS_INFO] = process.csInfo;
                 }
-                
+
                 //add key
                 info[KEY_KEY] = process.key;
-                
+
                 //add/save
                 if(YES != [rules add:[[Rule alloc] init:info] save:YES])
                 {
                     //err msg
                     os_log_error(logHandle, "ERROR: failed to add rule");
-                    
+
                     //bail
                     goto bail;
                 }
-                
+
                 //tell user rules changed
                 [alerts.xpcUserClient rulesChanged];
             }
-            
+
             //all set
             goto bail;
-            
+
         } //signed by apple
     }
     //dbg msg
@@ -850,7 +816,7 @@ bail:
         //dbg msg
         os_log_debug(logHandle, "'Allow Apple' preference not set, so skipped 'Is Apple' check");
     }
-    
+
     //'allow installed' check
     // if preference is enabled, item is 3rd-party, internal, and hasn't had its CS changed ...allow!
     if( (YES == [preferences.preferences[PREF_ALLOW_INSTALLED] boolValue]) &&
@@ -862,22 +828,22 @@ bail:
         {
             //app date
             NSDate* date = nil;
-            
+
             //dbg msg
             os_log_debug(logHandle, "3rd-party (internal) app, plus 'PREF_ALLOW_INSTALLED' is set...");
-            
+
             //only once
             // get install date
             dispatch_once(&onceToken, ^{
-                
+
                 //get LuLu's install date
                 installDate = preferences.preferences[PREF_INSTALL_TIMESTAMP];
-                
+
                 //dbg msg
-                os_log_debug(logHandle, "LuLu's install date: %{public}@", installDate);
-                
+                os_log_debug(logHandle, "LuLu's install date: %{private}@", installDate);
+
             });
-            
+
             //get item's date added
             date = dateAdded(process.path);
             if( (nil != date) &&
@@ -885,29 +851,29 @@ bail:
             {
                 //dbg msg
                 os_log_debug(logHandle, "3rd-party item was installed prior (%@) to LuLu (%@), allowing & adding rule", date, installDate);
-                
+
                 //init info for rule creation
                 info = [@{KEY_PATH:process.path, KEY_ACTION:@RULE_STATE_ALLOW, KEY_TYPE:@RULE_TYPE_BASELINE} mutableCopy];
-                
+
                 //add process cs info
                 if(nil != process.csInfo)
                 {
                     info[KEY_CS_INFO] = process.csInfo;
                 }
-                
+
                 //create and add rule
                 if(YES != [rules add:[[Rule alloc] init:info] save:YES])
                 {
                     //err msg
-                    os_log_error(logHandle, "ERROR: failed to add rule for %{public}@", info[KEY_PATH]);
-                     
+                    os_log_error(logHandle, "ERROR: failed to add rule for %{private}@", info[KEY_PATH]);
+
                     //bail
                     goto bail;
                 }
-                
+
                 //tell user rules changed
                 [alerts.xpcUserClient rulesChanged];
-                
+
                 //all set
                 goto bail;
             }
@@ -921,30 +887,30 @@ bail:
         //item is external
         else
         {
-            os_log_debug(logHandle, "%{public}@ is external, so skipping 'allow installed' check", process.path);
+            os_log_debug(logHandle, "%{private}@ is external, so skipping 'allow installed' check", process.path);
         }
     }
-    
+
     //allow simulator apps?
     if(YES == [preferences.preferences[PREF_ALLOW_SIMULATOR] boolValue])
     {
         //dbg msg
         os_log_debug(logHandle, "'allow simulator apps' is enabled, so checking process");
-        
+
         //is simulator app?
         if(YES == isSimulatorApp(process.path))
         {
             //dbg msg
-            os_log_debug(logHandle, "%{public}@, is an simulator app, so will allow", process.path);
-            
+            os_log_debug(logHandle, "%{private}@, is an simulator app, so will allow", process.path);
+
             //allow
             verdict = kFlowVerdictAllow;
-            
+
             //done
             goto bail;
         }
     }
-    
+
     //no user/client to show an alert to?
     // allow, but create a rule for review
     if(NO == canAlert)
@@ -955,18 +921,18 @@ bail:
 
     //sending to user, so pause!
     verdict = kFlowVerdictPause;
-        
+
     //create/deliver alert
     // note: handles response + next/any related flow
     [self alert:(NEFilterSocketFlow*)flow process:process];
-    
+
 bail:
-    
+
     //log msg
     // match on this if you want detailed insight into LuLu's decision
     // log stream --level debug --predicate 'subsystem == "com.objective-see.lulu" && composedMessage BEGINSWITH "[LULU]"'
-    os_log_debug(logHandle, "[LULU] PROCESS: %{public}@, FLOW (endpoint): %{public}@, RULE: %{public}@, verdict: %ld", process.path, ((NEFilterSocketFlow*)flow).remoteEndpoint, matchingRule, verdict);
-    
+    os_log_debug(logHandle, "[LULU] PROCESS: %{private}@, FLOW (endpoint): %{private}@, RULE: %{private}@, verdict: %ld", process.path, ((NEFilterSocketFlow*)flow).remoteEndpoint, matchingRule, verdict);
+
     return verdict;
 }
 
@@ -1002,7 +968,7 @@ bail:
 
         //log msg
         // note, this msg persists in log
-        os_log(logHandle, "(user) response: \"%@\" for %{public}@, that was trying to connect to %{public}@:%{public}@", (RULE_STATE_BLOCK == [alert[KEY_ACTION] unsignedIntValue]) ? @"block" : @"allow", alert[KEY_PATH], alert[KEY_ENDPOINT_ADDR], alert[KEY_ENDPOINT_PORT]);
+        os_log(logHandle, "(user) response: \"%@\" for %{private}@, that was trying to connect to %{private}@:%{private}@", (RULE_STATE_BLOCK == [alert[KEY_ACTION] unsignedIntValue]) ? @"block" : @"allow", alert[KEY_PATH], alert[KEY_ENDPOINT_ADDR], alert[KEY_ENDPOINT_PORT]);
 
         //'once'? no rule created
         // apply the user's verdict to just this (alerted) flow; the next flow will re-prompt
@@ -1010,7 +976,7 @@ bail:
         {
             //dbg msg
             os_log_debug(logHandle, "'once' response, so just handling here ...no rule will be created");
-            
+
             //verdict from user's action
             NEFilterNewFlowVerdict* verdict = (RULE_STATE_BLOCK == [alert[KEY_ACTION] unsignedIntValue])
                 ? [NEFilterNewFlowVerdict dropVerdict]
@@ -1048,7 +1014,7 @@ bail:
         //process related flows
         [self processRelatedFlow:alert[KEY_KEY]];
     }
-    
+
     //delivered to user
     else
     {
@@ -1060,7 +1026,7 @@ bail:
         // so it's resumed on reply (via processRelatedFlow), reaped if the process dies, or released on disconnect
         [self addRelatedFlow:alert[KEY_KEY] flow:(NEFilterSocketFlow*)flow];
     }
-    
+
     return;
 }
 
@@ -1071,12 +1037,12 @@ bail:
 -(void)addRelatedFlow:(NSString*)key flow:(NEFilterSocketFlow*)flow
 {
     //dbg msg
-    os_log_debug(logHandle, "adding flow to 'related': %{public}@ / %{public}@", key, flow);
-    
+    os_log_debug(logHandle, "adding flow to 'related': %{private}@ / %{private}@", key, flow);
+
     if(!key) {
         return;
     }
-    
+
     //sync/save
     @synchronized(self.relatedFlows)
     {
@@ -1098,7 +1064,7 @@ bail:
 {
     //dbg msg
     @synchronized(self.relatedFlows) {
-        os_log_debug(logHandle, "processing %lu related flow(s) for %{public}@", (unsigned long)[self.relatedFlows[key] count], key);
+        os_log_debug(logHandle, "processing %lu related flow(s) for %{private}@", (unsigned long)[self.relatedFlows[key] count], key);
     }
 
     while(YES)
@@ -1107,16 +1073,16 @@ bail:
 
         //dequeue one flow
         @synchronized(self.relatedFlows) {
-            
+
             NSMutableOrderedSet* queue = self.relatedFlows[key];
-            
+
             //done?
             if(!queue.count) {
                 os_log_debug(logHandle, "drained (processed) all related flows");
                 [self.relatedFlows removeObjectForKey:key];
                 break;
             }
-            
+
             flow = queue.firstObject;
             [queue removeObjectAtIndex:0];
         }
@@ -1131,25 +1097,25 @@ bail:
             [self addRelatedFlow:key flow:flow];
             break;
         }
-        
+
         //paused (asked user)
         // asked user, so be done for now too
         else if(flowVerdict == kFlowVerdictPause) {
             os_log_debug(logHandle, "flow is paused");
             break;
         }
-        
+
         //resume flow
         NEFilterNewFlowVerdict* verdict = (flowVerdict == kFlowVerdictBlock)
             ? [NEFilterNewFlowVerdict dropVerdict]
             : [NEFilterNewFlowVerdict allowVerdict];
-        
-    
-        os_log_debug(logHandle, "resuming related flow with %{public}@", verdict);
+
+
+        os_log_debug(logHandle, "resuming related flow with %{private}@", verdict);
 
         [self resumeFlow:flow withVerdict:verdict];
     }
-    
+
     os_log_debug(logHandle, "done processing related flows");
 }
 
@@ -1225,7 +1191,7 @@ bail:
 
             //process is gone
             // drop all its held flows, then clear its (now-stale) alert state
-            os_log_debug(logHandle, "process %d (key: %{public}@) has exited; reaping its flows", pid, key);
+            os_log_debug(logHandle, "process %d (key: %{private}@) has exited; reaping its flows", pid, key);
             [self resumeFlowsForKey:key verdict:[NEFilterNewFlowVerdict dropVerdict]];
             [alerts removeShown:key];
         }
@@ -1250,33 +1216,33 @@ bail:
 {
     //audit token
     audit_token_t* token = NULL;
-    
+
     //process obj
     Process* process = nil;
-    
+
     //extract (audit) token
     token = (audit_token_t*)flow.sourceAppAuditToken.bytes;
-    
+
     //init process object, via audit token
     process = [[Process alloc] init:token];
     if(nil == process)
     {
         //err msg
         os_log_error(logHandle, "ERROR: failed to create process for %d", audit_token_to_pid(*token));
-        
+
         //bail
         goto bail;
     }
-    
+
     //sync to add to cache
     @synchronized(self.cache) {
-        
+
         //add to cache
         [self.cache setObject:process forKey:flow.sourceAppAuditToken];
     }
-    
+
 bail:
-    
+
     return process;
 }
 
@@ -1287,87 +1253,87 @@ bail:
 {
     //best hostname
     NSString* bestHostname = nil;
-    
+
     //remote endpoint
     NWHostEndpoint* remoteEndpoint = nil;
-    
+
     //extract remote endpoint
     remoteEndpoint = (NWHostEndpoint*)flow.remoteEndpoint;
-    
+
     //priority 1: try flow.URL.host (best for domain names)
     if(flow.URL.host.length)
     {
         //dbg msg
-        os_log_debug(logHandle, "using flow.URL.host as best hostname: %{public}@", flow.URL.host);
-        
+        os_log_debug(logHandle, "using flow.URL.host as best hostname: %{private}@", flow.URL.host);
+
         //use it
         bestHostname = flow.URL.host;
-        
+
         //done
         goto bail;
     }
-    
+
     //priority 2: try flow.remoteHostname (macOS 11+)
     if(@available(macOS 11, *))
     {
         if(flow.remoteHostname.length)
         {
             //dbg msg
-            os_log_debug(logHandle, "using flow.remoteHostname as best hostname: %{public}@", flow.remoteHostname);
-            
+            os_log_debug(logHandle, "using flow.remoteHostname as best hostname: %{private}@", flow.remoteHostname);
+
             //use it
             bestHostname = flow.remoteHostname;
-            
+
             //done
             goto bail;
         }
     }
-    
+
     //priority 3: fallback to remoteEndpoint.hostname (may be IP address)
     if(remoteEndpoint.hostname.length)
     {
         //dbg msg
-        os_log_debug(logHandle, "using remoteEndpoint.hostname as fallback hostname: %{public}@", remoteEndpoint.hostname);
-        
+        os_log_debug(logHandle, "using remoteEndpoint.hostname as fallback hostname: %{private}@", remoteEndpoint.hostname);
+
         //use it
         bestHostname = remoteEndpoint.hostname;
     }
-    
+
 bail:
-    
+
     //dbg msg
-    os_log_debug(logHandle, "best hostname for flow: %{public}@", bestHostname);
-    
+    os_log_debug(logHandle, "best hostname for flow: %{private}@", bestHostname);
+
     return bestHostname;
 }
 
 //check if hostname is a valid localhost address
 -(BOOL)isLocalhostHostname:(NSString*)hostname {
-    
+
     struct sockaddr_in sa4 = {0};
     struct sockaddr_in6 sa6 = {0};
-    
+
     //sanity check
     if(!hostname.length) {
         return NO;
     }
-    
+
     //exact matches for localhost or IPv6 loopback
     if([hostname isEqualToString:@"::1"] ||
        [hostname isEqualToString:@"localhost"]) {
         return YES;
     }
-    
+
     //check for valid IPv4 loopback range (127.0.0.0/8)
     if(inet_pton(AF_INET, hostname.UTF8String, &(sa4.sin_addr)) == 1) {
         return IN_LOOPBACK(ntohl(sa4.sin_addr.s_addr));
     }
-    
+
     //check for valid IPv6 loopback (::1)
     if(inet_pton(AF_INET6, [hostname UTF8String], &(sa6.sin6_addr)) == 1) {
         return IN6_IS_ADDR_LOOPBACK(&sa6.sin6_addr);
     }
-    
+
     //not a valid localhost address
     return NO;
 }

@@ -136,7 +136,7 @@ extern NSMutableDictionary* alerts;
 -(void)handleXPCError:(NSError*)proxyError method:(const char*)method
 {
     //err msg
-    os_log_error(logHandle, "ERROR: failed to execute daemon XPC method '%s' (error: %{public}@)", method, proxyError);
+    os_log_error(logHandle, "ERROR: failed to execute daemon XPC method '%s' (error: %{private}@)", method, proxyError);
 
     //(re)create the connection
     [self reconnect];
@@ -183,7 +183,7 @@ extern NSMutableDictionary* alerts;
    }] getPreferences:^(NSDictionary* preferencesFromDaemon)
    {
        //dbg msg
-       os_log_debug(logHandle, "got preferences: %{public}@", preferencesFromDaemon);
+       os_log_debug(logHandle, "got preferences: %{private}@", preferencesFromDaemon);
 
        //save
        preferences = preferencesFromDaemon;
@@ -191,6 +191,24 @@ extern NSMutableDictionary* alerts;
    }];
 
     return preferences;
+}
+
+//get runtime list status
+// note: synchronous, will block until daemon responds
+-(NSDictionary*)getListStatus
+{
+    __block NSDictionary* status = nil;
+
+    [[self.daemon synchronousRemoteObjectProxyWithErrorHandler:^(NSError * proxyError)
+    {
+        [self handleXPCError:proxyError method:__PRETTY_FUNCTION__];
+
+    }] getListStatus:^(NSDictionary* statusFromDaemon)
+    {
+        status = statusFromDaemon;
+    }];
+
+    return status;
 }
 
 //update (save) preferences
@@ -212,7 +230,7 @@ extern NSMutableDictionary* alerts;
     }] updatePreferences:preferences reply:^(NSDictionary* preferences)
     {
         //dbg msg
-        os_log_debug(logHandle, "got preferences: %{public}@", preferences);
+        os_log_debug(logHandle, "got preferences: %{private}@", preferences);
         
         //save
         updatedPreferences = preferences;
@@ -250,7 +268,7 @@ extern NSMutableDictionary* alerts;
         if(nil != error)
         {
             //err msg
-            os_log_error(logHandle, "ERROR: failed to unarchive rules: %{public}@", error);
+            os_log_error(logHandle, "ERROR: failed to unarchive rules: %{private}@", error);
         }
     
     }];
@@ -262,7 +280,7 @@ extern NSMutableDictionary* alerts;
 -(void)addRule:(NSDictionary*)info
 {
     //dbg msg
-    os_log_debug(logHandle, "invoking daemon XPC method, '%s' with info: %{public}@", __PRETTY_FUNCTION__, info);
+    os_log_debug(logHandle, "invoking daemon XPC method, '%s' with info: %{private}@", __PRETTY_FUNCTION__, info);
     
     //make XPC request to add rule
     [[self.daemon synchronousRemoteObjectProxyWithErrorHandler:^(NSError * proxyError)
@@ -279,7 +297,7 @@ extern NSMutableDictionary* alerts;
 -(void)toggleRule:(NSString*)key rule:(NSString*)uuid state:(NSNumber*)state
 {
     //dbg msg
-    os_log_debug(logHandle, "invoking daemon XPC method, '%s' with key: %{public}@, rule id: %{public}@", __PRETTY_FUNCTION__, key, uuid);
+    os_log_debug(logHandle, "invoking daemon XPC method, '%s' with key: %{private}@, rule id: %{private}@", __PRETTY_FUNCTION__, key, uuid);
     
     //disable rule
     [[self.daemon synchronousRemoteObjectProxyWithErrorHandler:^(NSError * proxyError)
@@ -296,7 +314,7 @@ extern NSMutableDictionary* alerts;
 -(void)deleteRule:(NSString*)key rule:(NSString*)uuid
 {
     //dbg msg
-    os_log_debug(logHandle, "invoking daemon XPC method, '%s' with key: %{public}@, rule id: %{public}@", __PRETTY_FUNCTION__, key, uuid);
+    os_log_debug(logHandle, "invoking daemon XPC method, '%s' with key: %{private}@, rule id: %{private}@", __PRETTY_FUNCTION__, key, uuid);
     
     //delete rule
     [[self.daemon synchronousRemoteObjectProxyWithErrorHandler:^(NSError * proxyError)
@@ -383,7 +401,7 @@ extern NSMutableDictionary* alerts;
     }] getCurrentProfile:^(NSString* currrentProfileFromDaemon)
     {
         //dbg msg
-        os_log_debug(logHandle, "current profile from daemon: '%{public}@'", currrentProfileFromDaemon);
+        os_log_debug(logHandle, "current profile from daemon: '%{private}@'", currrentProfileFromDaemon);
         
         //save
         currentProfile = currrentProfileFromDaemon;
@@ -425,7 +443,7 @@ extern NSMutableDictionary* alerts;
     __block BOOL wasSet = NO;
     
     //dbg msg
-    os_log_debug(logHandle, "invoking daemon XPC method, '%s' with name: %{public}@", __PRETTY_FUNCTION__, name);
+    os_log_debug(logHandle, "invoking daemon XPC method, '%s' with name: %{private}@", __PRETTY_FUNCTION__, name);
     
     //send XPC message to set profile
     [[self.daemon synchronousRemoteObjectProxyWithErrorHandler:^(NSError* proxyError)
@@ -453,7 +471,7 @@ extern NSMutableDictionary* alerts;
     __block BOOL wasAdded = NO;
     
     //dbg msg
-    os_log_debug(logHandle, "invoking daemon XPC method, '%s' with %{public}@", __PRETTY_FUNCTION__, name);
+    os_log_debug(logHandle, "invoking daemon XPC method, '%s' with %{private}@", __PRETTY_FUNCTION__, name);
     
     //make XPC request to add profile
     [[self.daemon synchronousRemoteObjectProxyWithErrorHandler:^(NSError* proxyError)
@@ -481,7 +499,7 @@ extern NSMutableDictionary* alerts;
     __block BOOL wasDeleted = NO;
     
     //dbg msg
-    os_log_debug(logHandle, "invoking daemon XPC method, '%s' with name: %{public}@", __PRETTY_FUNCTION__, name);
+    os_log_debug(logHandle, "invoking daemon XPC method, '%s' with name: %{private}@", __PRETTY_FUNCTION__, name);
     
     //send XPC message to delete profile
     [[self.daemon synchronousRemoteObjectProxyWithErrorHandler:^(NSError* proxyError)
@@ -500,7 +518,7 @@ extern NSMutableDictionary* alerts;
     }];
     
     //dbg msg
-    os_log_debug(logHandle, "daemon XPC method, '%s' with name: %{public}@ returned", __PRETTY_FUNCTION__, name);
+    os_log_debug(logHandle, "daemon XPC method, '%s' with name: %{private}@ returned", __PRETTY_FUNCTION__, name);
     
     return wasDeleted;
 }

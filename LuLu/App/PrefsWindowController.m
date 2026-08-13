@@ -83,6 +83,65 @@ extern XPCDaemonClient* xpcDaemonClient;
     return;
 }
 
+//render a concise, user-facing runtime state for a configured list
+-(NSString*)statusStringForList:(NSDictionary*)status enabled:(BOOL)enabled
+{
+    if(NO == enabled) return NSLocalizedString(@"Status: Disabled", @"List status when disabled");
+
+    NSString* path = status[KEY_LIST_STATUS_PATH];
+    if(0 == path.length) return NSLocalizedString(@"Status: Add a list path", @"List status without a path");
+
+    BOOL remote = [status[KEY_LIST_STATUS_REMOTE] boolValue];
+    NSDate* lastLoaded = status[KEY_LIST_STATUS_LAST_LOADED];
+    NSString* error = status[KEY_LIST_STATUS_ERROR];
+
+    if(0 != error.length)
+    {
+        if(nil == lastLoaded)
+        {
+            return remote ? NSLocalizedString(@"Status: Unavailable — retrying", @"Remote list status before first successful load")
+                          : NSLocalizedString(@"Status: Local file unavailable", @"Local list status when unavailable");
+        }
+
+        NSString* date = [NSDateFormatter localizedStringFromDate:lastLoaded dateStyle:NSDateFormatterShortStyle timeStyle:NSDateFormatterShortStyle];
+        return [NSString stringWithFormat:NSLocalizedString(@"Status: %lu items loaded %@ — retrying", @"Remote list status with cached policy"), (unsigned long)[status[KEY_LIST_STATUS_ITEM_COUNT] unsignedIntegerValue], date];
+    }
+
+    if(nil == lastLoaded) return NSLocalizedString(@"Status: Loading…", @"List loading status");
+
+    NSString* date = [NSDateFormatter localizedStringFromDate:lastLoaded dateStyle:NSDateFormatterShortStyle timeStyle:NSDateFormatterShortStyle];
+    return [NSString stringWithFormat:NSLocalizedString(@"Status: %lu items loaded %@", @"Loaded list status"), (unsigned long)[status[KEY_LIST_STATUS_ITEM_COUNT] unsignedIntegerValue], date];
+}
+
+//refreshes the Lists pane without changing configuration or filtering behavior
+-(void)refreshListStatus
+{
+    NSDictionary* status = [xpcDaemonClient getListStatus];
+
+    self.allowListStatus.stringValue = [self statusStringForList:status[KEY_ALLOW_LIST_STATUS]
+                                                         enabled:[self.preferences[PREF_USE_ALLOW_LIST] boolValue]];
+    self.blockListStatus.stringValue = [self statusStringForList:status[KEY_BLOCK_LIST_STATUS]
+                                                         enabled:[self.preferences[PREF_USE_BLOCK_LIST] boolValue]];
+}
+
+-(void)startListStatusTimer
+{
+    [self.listStatusTimer invalidate];
+    [self refreshListStatus];
+
+    self.listStatusTimer = [NSTimer scheduledTimerWithTimeInterval:15.0
+                                                              target:self
+                                                            selector:@selector(refreshListStatus)
+                                                            userInfo:nil
+                                                             repeats:YES];
+}
+
+-(void)stopListStatusTimer
+{
+    [self.listStatusTimer invalidate];
+    self.listStatusTimer = nil;
+}
+
 //set subtitle to current profile
 -(void)setSubTitle
 {
@@ -122,7 +181,7 @@ extern XPCDaemonClient* xpcDaemonClient;
     NSToolbarItem* item = [[self.toolbar.items filteredArrayUsingPredicate:predicate] firstObject];
     
     //dbg msg
-    os_log_debug(logHandle, "item '%@' -> %{public}@", itemID, item);
+    os_log_debug(logHandle, "item '%@' -> %{private}@", itemID, item);
     
     //select
     [self toolbarButtonHandler:item];
@@ -139,7 +198,9 @@ extern XPCDaemonClient* xpcDaemonClient;
     NSView* view = nil;
     
     //dbg msg
-    os_log_debug(logHandle, "%s invoked with %{public}@", __PRETTY_FUNCTION__, sender);
+    os_log_debug(logHandle, "%s invoked with %{private}@", __PRETTY_FUNCTION__, sender);
+
+    if(TOOLBAR_LISTS != ((NSToolbarItem*)sender).tag) [self stopListStatusTimer];
     
     //when we've prev added a view
     // remove the prev view cuz adding a new one
@@ -244,6 +305,8 @@ extern XPCDaemonClient* xpcDaemonClient;
             
             //set block list input state
             self.blockList.enabled = [self.preferences[PREF_USE_BLOCK_LIST] boolValue];
+
+            [self startListStatusTimer];
             
             break;
             
@@ -260,7 +323,7 @@ extern XPCDaemonClient* xpcDaemonClient;
             [self.profiles insertObject:@"Default" atIndex:0];
             
             //dbg msg
-            os_log_debug(logHandle, "list of profiles: %{public}@", self.profiles);
+            os_log_debug(logHandle, "list of profiles: %{private}@", self.profiles);
             
             //reload table
             [self.profilesTable reloadData];
@@ -489,6 +552,12 @@ bail:
         // e.g. show/hide status bar icon, etc.
         [((AppDelegate*)[[NSApplication sharedApplication] delegate]) preferencesChanged:self.preferences];
     }
+
+    if( (BUTTON_USE_ALLOW_LIST == ((NSButton*)sender).tag) ||
+        (BUTTON_USE_BLOCK_LIST == ((NSButton*)sender).tag) )
+    {
+        [self refreshListStatus];
+    }
     
     return;
 }
@@ -522,10 +591,11 @@ bail:
             self.allowList.stringValue = panel.URL.path;
             
             //dbg msg
-            os_log_debug(logHandle, "user selected allow list: %{public}@", self.allowList.stringValue);
+            os_log_debug(logHandle, "user selected allow list: %{private}@", self.allowList.stringValue);
             
             //send XPC msg to daemon to update prefs
             self.preferences = [xpcDaemonClient updatePreferences:@{PREF_ALLOW_LIST:panel.URL.path}];
+            [self refreshListStatus];
         }
         //block list
         else if(sender == self.selectBlockListButton)
@@ -534,16 +604,17 @@ bail:
             self.blockList.stringValue = panel.URL.path;
             
             //dbg msg
-            os_log_debug(logHandle, "user selected block list: %{public}@", self.blockList.stringValue);
+            os_log_debug(logHandle, "user selected block list: %{private}@", self.blockList.stringValue);
             
             //send XPC msg to daemon to update prefs
             self.preferences = [xpcDaemonClient updatePreferences:@{PREF_BLOCK_LIST:panel.URL.path}];
+            [self refreshListStatus];
         }
         //error
         else
         {
             //err msg
-            os_log_error(logHandle, "ERROR: %{public}@ is an invalid sender", sender);
+            os_log_error(logHandle, "ERROR: %{private}@ is an invalid sender", sender);
         }
     }
     
@@ -554,11 +625,12 @@ bail:
 -(IBAction)updateBlockList:(id)sender
 {
     //dbg msg
-    os_log_debug(logHandle, "got 'update block list event' (value: %{public}@)", self.blockList.stringValue);
+    os_log_debug(logHandle, "got 'update block list event' (value: %{private}@)", self.blockList.stringValue);
     
     //send XPC msg to daemon to update prefs
     // returns (all/latest) prefs, which is what we want
     self.preferences = [xpcDaemonClient updatePreferences:@{PREF_BLOCK_LIST:self.blockList.stringValue}];
+    [self refreshListStatus];
     
     return;
 }
@@ -615,7 +687,7 @@ bail:
         NSButton* selectButton = (NSButton*)[cell viewWithTag:TABLE_ROW_SELECT_BTN_TAG];
         
         //dbg msg
-        os_log_debug(logHandle, "current row: %ld, current profile %{public}@, select button: %{public}@", (long)row, currentProfile, selectButton);
+        os_log_debug(logHandle, "current row: %ld, current profile %{private}@, select button: %{private}@", (long)row, currentProfile, selectButton);
         
         //no profile?
         // select button/row zero (default)
@@ -715,7 +787,7 @@ bail:
     }
     
     //dbg msg
-    os_log_debug(logHandle, "row: %ld, profile: %{public}@", (long)row, profile);
+    os_log_debug(logHandle, "row: %ld, profile: %{private}@", (long)row, profile);
     
     return profile;
 }
@@ -734,7 +806,7 @@ bail:
     profile = [self profileFromTable:sender];
     
     //dbg msg
-    os_log_debug(logHandle, "user wants to change profile to '%{public}@'", profile ? profile : @"Default");
+    os_log_debug(logHandle, "user wants to change profile to '%{private}@'", profile ? profile : @"Default");
     
     //set profile via XPC
     [xpcDaemonClient setProfile:profile];
@@ -812,7 +884,7 @@ bail:
             if (returnCode == NSModalResponseOK) {
             
                 //dbg msg
-                os_log_debug(logHandle, "user wants to add profile '%{public}@'", self.profileName);
+                os_log_debug(logHandle, "user wants to add profile '%{private}@'", self.profileName);
                 
                 //add profile via XPC
                 [xpcDaemonClient addProfile:self.profileName preferences:self.profilePreferences];
@@ -1040,7 +1112,7 @@ bail:
     profile = [self profileFromTable:sender];
     
     //dbg msg
-    os_log_debug(logHandle, "user wants to delete profile '%{public}@'", profile);
+    os_log_debug(logHandle, "user wants to delete profile '%{private}@'", profile);
     
     //show alert
     response = showAlert(NSAlertStyleInformational, NSLocalizedString(@"Confirm Deletion", @"Confirm Deletion"), [NSString stringWithFormat:NSLocalizedString(@"Delete profile: '%@'?", @"Delete profile: '%@'?"), profile], @[NSLocalizedString(@"Ok", @"Ok"), NSLocalizedString(@"Cancel", @"Cancel")]);
@@ -1059,7 +1131,7 @@ bail:
     [xpcDaemonClient deleteProfile:profile];
     
     //dbg msg
-    os_log_debug(logHandle, "deleted profile '%{public}@'", profile);
+    os_log_debug(logHandle, "deleted profile '%{private}@'", profile);
     
     //tell app profiles changed
     // will grab profile's preferences too
@@ -1204,6 +1276,8 @@ bail:
 // update prefs/set activation policy
 -(void)windowWillClose:(NSNotification *)notification
 {
+    [self stopListStatusTimer];
+
     //blank allow list?
     // uncheck 'enabled' and update prefs
     if(0 == self.allowList.stringValue.length)

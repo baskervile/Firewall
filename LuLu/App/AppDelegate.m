@@ -81,7 +81,7 @@ XPCDaemonClient* xpcDaemonClient = nil;
     if(![NSBundle.mainBundle.bundlePath hasPrefix:@"/Applications/"])
     {
         //dbg msg
-        os_log_debug(logHandle, "LuLu running from %{public}@, not from within /Applications", NSBundle.mainBundle.bundlePath);
+        os_log_debug(logHandle, "LuLu running from %{private}@, not from within /Applications", NSBundle.mainBundle.bundlePath);
         
         //show alert
         showAlert(NSAlertStyleInformational, NSLocalizedString(@"LuLu must run from within /Applications\r\n", @"LuLu must run from within /Applications\r\n"), NSLocalizedString(@"...please copy it into /Applications and re-launch.", @"...please copy it into /Applications and re-launch."), @[NSLocalizedString(@"OK",@"OK")]);
@@ -289,7 +289,7 @@ XPCDaemonClient* xpcDaemonClient = nil;
                     do
                     {
                         //dbg msg
-                        os_log_debug(logHandle, "waiting for %{public}@", EXT_BUNDLE_ID);
+                        os_log_debug(logHandle, "waiting for %{private}@", EXT_BUNDLE_ID);
                         
                         //nap
                         [NSThread sleepForTimeInterval:0.25f];
@@ -297,7 +297,7 @@ XPCDaemonClient* xpcDaemonClient = nil;
                     } while(YES != [extension isExtensionRunning]);
                     
                     //dbg msg
-                    os_log_debug(logHandle, "%{public}@ is off and running", EXT_BUNDLE_ID);
+                    os_log_debug(logHandle, "%{private}@ is off and running", EXT_BUNDLE_ID);
 
                     //init XPC client & wait for the daemon to be ready
                     xpcDaemonClient = [[XPCDaemonClient alloc] init];
@@ -686,7 +686,7 @@ bail:
     preferences = [xpcDaemonClient updatePreferences:@{PREF_IS_DISABLED:@NO}];
     
     //dbg msg
-    os_log_debug(logHandle, "loaded preferences %{public}@", preferences);
+    os_log_debug(logHandle, "loaded preferences %{private}@", preferences);
     
     //run with status bar icon?
     if(YES != [preferences[PREF_NO_ICON_MODE] boolValue])

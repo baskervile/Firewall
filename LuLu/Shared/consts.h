@@ -201,6 +201,15 @@ typedef NS_ENUM(NSInteger, EndpointType) {
 //global block list
 #define PREF_BLOCK_LIST @"blockList"
 
+//runtime list status keys
+#define KEY_ALLOW_LIST_STATUS @"allowListStatus"
+#define KEY_BLOCK_LIST_STATUS @"blockListStatus"
+#define KEY_LIST_STATUS_PATH @"path"
+#define KEY_LIST_STATUS_REMOTE @"remote"
+#define KEY_LIST_STATUS_ITEM_COUNT @"itemCount"
+#define KEY_LIST_STATUS_LAST_LOADED @"lastLoaded"
+#define KEY_LIST_STATUS_ERROR @"error"
+
 //prefs
 // current profile
 #define PREF_CURRENT_PROFILE @"currentProfile"

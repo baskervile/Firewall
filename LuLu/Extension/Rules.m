@@ -102,7 +102,7 @@ extern Preferences* preferences;
     if(YES == [[NSFileManager defaultManager] fileExistsAtPath:rulesFile_V1])
     {
         //dbg msg
-        os_log_debug(logHandle, "found v1.0 rules: %{public}@", rulesFile_V1);
+        os_log_debug(logHandle, "found v1.0 rules: %{private}@", rulesFile_V1);
         
         //upgrade
         if(YES != [self upgrade:[NSDictionary dictionaryWithContentsOfFile:rulesFile_V1]])
@@ -118,9 +118,9 @@ extern Preferences* preferences;
         if(YES != [NSFileManager.defaultManager removeItemAtPath:rulesFile_V1 error:&error])
         {
             //err msg
-            os_log_error(logHandle, "ERROR: failed to removed v1.0 rules: %{public}@", rulesFile_V1);
+            os_log_error(logHandle, "ERROR: failed to removed v1.0 rules: %{private}@", rulesFile_V1);
             
-        } else os_log_debug(logHandle, "removed v1.0 rules: %{public}@", rulesFile_V1);
+        } else os_log_debug(logHandle, "removed v1.0 rules: %{private}@", rulesFile_V1);
         
     } else os_log_debug(logHandle, "no v1.0 rules...");
     
@@ -190,7 +190,7 @@ bail:
         if(YES != [[NSFileManager defaultManager] fileExistsAtPath:key])
         {
             //dbg msg
-            os_log_debug(logHandle, "ignoring (v1) rule for %{public}@, as it no longer exists on disk", key);
+            os_log_debug(logHandle, "ignoring (v1) rule for %{private}@, as it no longer exists on disk", key);
             
             //ignore
             continue;
@@ -295,7 +295,7 @@ bail:
     if(nil == rules)
     {
         //err msg
-        os_log_error(logHandle, "ERROR: failed to unarchive rules (error: %{public}@)", error);
+        os_log_error(logHandle, "ERROR: failed to unarchive rules (error: %{private}@)", error);
     }
 
     return rules;
@@ -328,14 +328,14 @@ bail:
     rulesFile = [self getPath];
     
     //dbg msg
-    os_log_debug(logHandle, "loading rules from: %{public}@", rulesFile);
+    os_log_debug(logHandle, "loading rules from: %{private}@", rulesFile);
     
     //(now) load archived rules from disk
     archivedRules = [NSData dataWithContentsOfFile:rulesFile];
     if(nil == archivedRules)
     {
         //err msg
-        os_log_error(logHandle, "ERROR: failed to load rules from %{public}@", rulesFile);
+        os_log_error(logHandle, "ERROR: failed to load rules from %{private}@", rulesFile);
         
         //bail
         goto bail;
@@ -351,7 +351,7 @@ bail:
     if(nil == self.rules)
     {
         //err msg
-        os_log_error(logHandle, "ERROR: failed to unarchive rules from %{public}@", RULES_FILE);
+        os_log_error(logHandle, "ERROR: failed to unarchive rules from %{private}@", RULES_FILE);
 
         //bail
         goto bail;
@@ -403,7 +403,7 @@ bail:
             }
             
             //dbg msg
-            os_log_debug(logHandle, "loaded rule has an expiration date set: %{public}@", rule.expiration);
+            os_log_debug(logHandle, "loaded rule has an expiration date set: %{private}@", rule.expiration);
             
             //interval
             timeInterval = [rule.expiration timeIntervalSinceNow];
@@ -488,7 +488,7 @@ bail:
         defaultBinary = DEFAULT_RULES[i];
         
         //dbg msg
-        os_log_debug(logHandle, "processing (default) binary, %{public}@", defaultBinary);
+        os_log_debug(logHandle, "processing (default) binary, %{private}@", defaultBinary);
         
         //skip if binary doesn't exist
         // some don't on newer versions of macOS
@@ -499,7 +499,7 @@ bail:
         if(nil == binary)
         {
             //err msg
-            os_log_error(logHandle, "ERROR: failed to generate binary for default rule: %{public}@", DEFAULT_RULES[i]);
+            os_log_error(logHandle, "ERROR: failed to generate binary for default rule: %{private}@", DEFAULT_RULES[i]);
             
             //skip
             continue;
@@ -544,7 +544,7 @@ bail:
     NSTimeInterval timeInterval = 0;
     
     //dbg msg
-    os_log_debug(logHandle, "adding rule: %{public}@ -> %{public}@", rule.key, rule);
+    os_log_debug(logHandle, "adding rule: %{private}@ -> %{private}@", rule.key, rule);
 
     //sanity check
     if(nil == rule)
@@ -598,7 +598,7 @@ bail:
     if(nil != rule.expiration)
     {
         //dbg msg
-        os_log_debug(logHandle, "rule has an expiration date set: %{public}@", rule.expiration);
+        os_log_debug(logHandle, "rule has an expiration date set: %{private}@", rule.expiration);
         
         timeInterval = [rule.expiration timeIntervalSinceNow];
         if(timeInterval > 0) {
@@ -714,7 +714,7 @@ bail:
     NWHostEndpoint* remoteEndpoint = nil;
     
     //dbg msg
-    os_log_debug(logHandle, "looking for rule for %{public}@ -> %{public}@", process.key, process.path);
+    os_log_debug(logHandle, "looking for rule for %{private}@ -> %{private}@", process.key, process.path);
     
     //sync to access
     @synchronized(self)
@@ -793,7 +793,7 @@ bail:
                         (rule.pid.intValue != ancestorPID) ) continue;
 
                     //dbg msg
-                    os_log_debug(logHandle, "found tree ('process + kids') rule via ancestor %{public}@", ancestor);
+                    os_log_debug(logHandle, "found tree ('process + kids') rule via ancestor %{private}@", ancestor);
 
                     //add
                     [treeRules addObject:rule];
@@ -849,7 +849,7 @@ bail:
                 if(0 != rule.isDisabled.intValue) {
                     
                     //dbg msg
-                    os_log_debug(logHandle, "skipping disabled rule match %{public}@", rule);
+                    os_log_debug(logHandle, "skipping disabled rule match %{private}@", rule);
                     
                     //skip
                     continue;
@@ -876,7 +876,7 @@ bail:
                     ([[NSDate date] compare:rule.expiration] == NSOrderedDescending) )
                 {
                     //err msg
-                    os_log_error(logHandle, "ERROR: rule %{public}@ has expired, should already have been removed", rule);
+                    os_log_error(logHandle, "ERROR: rule %{private}@ has expired, should already have been removed", rule);
                     
                     //skip
                     continue;
@@ -944,7 +944,7 @@ bail:
                 else
                 {
                     //dbg msg
-                    os_log_debug(logHandle, "address and port set (%{public}@:%{public}@), will check both for match", rule.endpointAddr, rule.endpointPort);
+                    os_log_debug(logHandle, "address and port set (%{private}@:%{private}@), will check both for match", rule.endpointAddr, rule.endpointPort);
                     
                     //match?
                     if( (YES == [self endpointAddrMatch:flow rule:rule]) &&
@@ -1084,7 +1084,7 @@ bail:
     }
     
     //dbg msg
-    os_log_debug(logHandle, "checking rule's endpoint address (%{public}@) and rule's endpoint host %{public}@ against %{public}@", rule.endpointAddr, rule.endpointHost, endpointNames);
+    os_log_debug(logHandle, "checking rule's endpoint address (%{private}@) and rule's endpoint host %{private}@ against %{private}@", rule.endpointAddr, rule.endpointHost, endpointNames);
     
     //endpoint addr a regex (or glob)?
     // init regex and check for match
@@ -1099,7 +1099,7 @@ bail:
         if(nil == endpointAddrRegex)
         {
             //err msg
-            os_log_error(logHandle, "ERROR: failed to create regex from %{public}@", rule.endpointAddr);
+            os_log_error(logHandle, "ERROR: failed to create regex from %{private}@", rule.endpointAddr);
 
             //bail
             goto bail;
@@ -1112,7 +1112,7 @@ bail:
             if(0 != [endpointAddrRegex numberOfMatchesInString:endpointName options:0 range:NSMakeRange(0, endpointName.length)])
             {
                 //dbg msg
-                os_log_debug(logHandle, "rule match: regex on %{public}@", endpointName);
+                os_log_debug(logHandle, "rule match: regex on %{private}@", endpointName);
                 
                 //match
                 isMatch = YES;
@@ -1138,7 +1138,7 @@ bail:
             if(YES == [rule endpointAddrInRange:endpointName])
             {
                 //dbg msg
-                os_log_debug(logHandle, "rule match: CIDR/range on %{public}@", endpointName);
+                os_log_debug(logHandle, "rule match: CIDR/range on %{private}@", endpointName);
 
                 //match
                 isMatch = YES;
@@ -1157,13 +1157,13 @@ bail:
         for(NSString* endpointName in endpointNames)
         {
             //dbg msg
-            os_log_debug(logHandle, "checking %{public}@ vs. %{public}@", rule.endpointAddr, endpointName);
+            os_log_debug(logHandle, "checking %{private}@ vs. %{private}@", rule.endpointAddr, endpointName);
             
             //check against rule's endpoint address
             if(NSOrderedSame == [rule.endpointAddr caseInsensitiveCompare:endpointName])
             {
                 //dbg msg
-                os_log_debug(logHandle, "rule match (endpoint address): %{public}@", endpointName);
+                os_log_debug(logHandle, "rule match (endpoint address): %{private}@", endpointName);
                 
                 //match
                 isMatch = YES;
@@ -1175,7 +1175,7 @@ bail:
                 (NSOrderedSame == [rule.endpointHost caseInsensitiveCompare:endpointName]) )
             {
                 //dbg msg
-                os_log_debug(logHandle, "rule match: (endpoint host) %{public}@", endpointName);
+                os_log_debug(logHandle, "rule match: (endpoint host) %{private}@", endpointName);
                 
                 //match
                 isMatch = YES;
@@ -1197,7 +1197,7 @@ bail:
     BOOL result = NO;
     
     //dbg msg
-    os_log_debug(logHandle, "toggling rule, key: %{public}@, rule id: %{public}@", key, uuid);
+    os_log_debug(logHandle, "toggling rule, key: %{private}@, rule id: %{private}@", key, uuid);
     
     //sync to access
     @synchronized(self)
@@ -1278,7 +1278,7 @@ bail:
     __block NSUInteger ruleIndex = -1;
     
     //dbg msg
-    os_log_debug(logHandle, "deleting rule, key: %{public}@, rule id: %{public}@", key, uuid);
+    os_log_debug(logHandle, "deleting rule, key: %{private}@, rule id: %{private}@", key, uuid);
     
     //sync to access
     @synchronized(self)
@@ -1324,7 +1324,7 @@ bail:
             if(0 == ((NSMutableArray*)self.rules[key][KEY_RULES]).count)
             {
                 //dbg msg
-                os_log_debug(logHandle, "rule was only/last one for %{public}@, so removing item entry", key);
+                os_log_debug(logHandle, "rule was only/last one for %{private}@, so removing item entry", key);
                 
                 //remove process
                 [self.rules removeObjectForKey:key];
@@ -1380,7 +1380,7 @@ bail:
     rulesFile = [self getPath];
     
     //dbg msg
-    os_log_debug(logHandle, "saving (non-temp) rules to %{public}@", rulesFile);
+    os_log_debug(logHandle, "saving (non-temp) rules to %{private}@", rulesFile);
     
     //sync to save
     @synchronized(self) {
@@ -1440,7 +1440,7 @@ bail:
         if(nil == archivedRules)
         {
             //err msg
-            os_log_error(logHandle, "ERROR: failed to serialize rules: %{public}@", error);
+            os_log_error(logHandle, "ERROR: failed to serialize rules: %{private}@", error);
                 
             //bail
             goto bail;
@@ -1453,7 +1453,7 @@ bail:
         if(YES != [archivedRules writeToFile:rulesFile atomically:YES])
         {
             //err msg
-            os_log_error(logHandle, "ERROR: failed to save archived rules to: %{public}@", rulesFile);
+            os_log_error(logHandle, "ERROR: failed to save archived rules to: %{private}@", rulesFile);
             
             //bail
             goto bail;
@@ -1479,7 +1479,7 @@ bail:
     NSDictionary* unarchivedRules = nil;
     
     //dbg msg
-    os_log_debug(logHandle, "method '%s' invoked with %{public}@", __PRETTY_FUNCTION__, importedRules);
+    os_log_debug(logHandle, "method '%s' invoked with %{private}@", __PRETTY_FUNCTION__, importedRules);
     
     //sanity check
     if(YES != [importedRules isKindOfClass:[NSData class]])
@@ -1653,7 +1653,7 @@ bail:
                     if(YES != [NSFileManager.defaultManager fileExistsAtPath:path])
                     {
                         //dbg msg
-                        os_log_debug(logHandle, "%{public}@ is gone, will delete directory rule", path);
+                        os_log_debug(logHandle, "%{private}@ is gone, will delete directory rule", path);
                         
                         //add to list
                         [rules2Delete addObject:rule];
@@ -1692,7 +1692,7 @@ bail:
                        (YES != [NSFileManager.defaultManager fileExistsAtPath:rule.path]))
                     {
                         //dbg msg
-                        os_log_debug(logHandle, "%{public}@ is gone - will delete rule", rule.path);
+                        os_log_debug(logHandle, "%{private}@ is gone - will delete rule", rule.path);
                         
                         //add to list
                         [rules2Delete addObject:rule];

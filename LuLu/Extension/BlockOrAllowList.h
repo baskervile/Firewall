@@ -23,11 +23,11 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, retain)NSMutableSet* items;
 
 //modification time
-@property(nonatomic, retain)NSDate* lastModified;
+@property(nullable, nonatomic, retain)NSDate* lastModified;
 
 //timer to (re)load a remote list daily
 // note: a single repeating source, so reloads don't stack
-@property(nonatomic, strong)dispatch_source_t reloadTimer;
+@property(nullable, nonatomic, strong)dispatch_source_t reloadTimer;
 
 
 /* METHODS */
@@ -50,6 +50,15 @@ NS_ASSUME_NONNULL_BEGIN
 
 //check if flow matches item on block list
 -(BOOL)isMatch:(NEFilterSocketFlow*)flow;
+
+//current, non-persistent load status for the UI
+-(NSDictionary*)status;
+
+//time at which this source last loaded successfully
+@property(nullable, nonatomic, retain)NSDate* lastLoaded;
+
+//brief non-sensitive reason why the most recent load failed
+@property(nullable, nonatomic, copy)NSString* lastError;
 
 @end
 

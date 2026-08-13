@@ -87,7 +87,7 @@ extern XPCDaemonClient* xpcDaemonClient;
             if(YES != [NSFileManager.defaultManager removeItemAtPath:destination error:&error])
             {
                 //err msg
-                os_log_error(logHandle, "ERROR: failed to remove %{public}@ (error: %{public}@)", destination, error);
+                os_log_error(logHandle, "ERROR: failed to remove %{private}@ (error: %{private}@)", destination, error);
                 goto bail;
             }
         }
@@ -97,7 +97,7 @@ extern XPCDaemonClient* xpcDaemonClient;
     if(YES != [NSFileManager.defaultManager copyItemAtPath:source toPath:destination error:&error])
     {
         //err msg
-        os_log_error(logHandle, "ERROR: failed to move %{public}@ to %{public}@ (error: %{public}@)", source, destination, error);
+        os_log_error(logHandle, "ERROR: failed to move %{private}@ to %{private}@ (error: %{private}@)", source, destination, error);
         goto bail;
     }
     
@@ -108,7 +108,7 @@ extern XPCDaemonClient* xpcDaemonClient;
     if(nil == [NSWorkspace.sharedWorkspace launchApplicationAtURL:[NSURL fileURLWithPath:destination] options:0 configuration:@{} error:&error])
     {
         //err msg
-        os_log_error(logHandle, "ERROR: failed to launch  %{public}@, (error: %{public}@)", destination, error);
+        os_log_error(logHandle, "ERROR: failed to launch  %{private}@, (error: %{private}@)", destination, error);
         goto bail;
     }
     
@@ -175,7 +175,7 @@ bail:
             errors = YES;
             
             //err msg
-            os_log_error(logHandle, "ERROR: failed to remove %{public}@ (error: %{public}@)", app, error);
+            os_log_error(logHandle, "ERROR: failed to remove %{private}@ (error: %{private}@)", app, error);
             
             //but continue onwards
             
@@ -183,7 +183,7 @@ bail:
         //dbg msg
         else
         {
-            os_log_debug(logHandle, "removed %{public}@", app);
+            os_log_debug(logHandle, "removed %{private}@", app);
         }
     }
     
@@ -246,7 +246,7 @@ bail:
         }
         
         //dbg msg
-        os_log_debug(logHandle, "terminating %{public}@", lulu);
+        os_log_debug(logHandle, "terminating %{private}@", lulu);
         
         //kill
         kill(pid.intValue, SIGKILL);
@@ -276,7 +276,7 @@ bail:
                 if(YES != [NSFileManager.defaultManager removeItemAtPath:copy error:&error])
                 {
                     //err msg
-                    os_log_error(logHandle, "ERROR: failed to remove %{public}@ (error: %{public}@)", copy, error);
+                    os_log_error(logHandle, "ERROR: failed to remove %{private}@ (error: %{private}@)", copy, error);
                     goto bail;
                 }
             }
@@ -285,19 +285,19 @@ bail:
             if(YES != [NSFileManager.defaultManager copyItemAtPath:source toPath:copy error:&error])
             {
                 //err msg
-                os_log_error(logHandle, "ERROR: failed to move %{public}@ to %{public}@ (error: %{public}@)", source, copy, error);
+                os_log_error(logHandle, "ERROR: failed to move %{private}@ to %{private}@ (error: %{private}@)", source, copy, error);
                 goto bail;
             }
             
             //dbg msg
-            os_log_debug(logHandle, "launching copy %{public}@, to deactivate extension", copy);
+            os_log_debug(logHandle, "launching copy %{private}@, to deactivate extension", copy);
             
             //launch copy
             runningCopy = [NSWorkspace.sharedWorkspace launchApplicationAtURL:[NSURL fileURLWithPath:copy] options:0 configuration:[NSDictionary dictionaryWithObject:@[@"-quit"] forKey:NSWorkspaceLaunchConfigurationArguments] error:&error];
             if(nil == runningCopy)
             {
                 //err msg
-                os_log_error(logHandle, "ERROR: failed to launch copy, %{public}@, (error: %{public}@)", copy, error);
+                os_log_error(logHandle, "ERROR: failed to launch copy, %{private}@, (error: %{private}@)", copy, error);
                 goto bail;
             }
             
@@ -314,13 +314,13 @@ bail:
             if(YES != [NSFileManager.defaultManager removeItemAtPath:copy error:&error])
             {
                 //err msg
-                os_log_error(logHandle, "ERROR: failed to remove %{public}@ (error: %{public}@)", copy, error);
+                os_log_error(logHandle, "ERROR: failed to remove %{private}@ (error: %{private}@)", copy, error);
                 goto bail;
                 
             } 
             
             //dbg msg
-            os_log_debug(logHandle, "removed copy %{public}@", copy);
+            os_log_debug(logHandle, "removed copy %{private}@", copy);
         }
         
         //(now) running from /Apps
@@ -379,7 +379,7 @@ bail:
         if(YES != [networkMonitor.bundleURL.path hasPrefix:NSBundle.mainBundle.resourcePath]) continue;
         
         //dbg msg
-        os_log_debug(logHandle, "terminating network monitor: %{public}@", networkMonitor);
+        os_log_debug(logHandle, "terminating network monitor: %{private}@", networkMonitor);
         
         //terminate
         [networkMonitor terminate];

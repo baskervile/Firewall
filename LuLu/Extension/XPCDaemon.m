@@ -15,6 +15,7 @@
 #import "XPCDaemon.h"
 #import "utilities.h"
 #import "Preferences.h"
+#import "BlockOrAllowList.h"
 
 //global rules obj
 extern Rules* rules;
@@ -27,6 +28,10 @@ extern Profiles* profiles;
 
 //global prefs obj
 extern Preferences* preferences;
+
+//runtime lists
+extern BlockOrAllowList* allowList;
+extern BlockOrAllowList* blockList;
 
 //global log handle
 extern os_log_t logHandle;
@@ -58,12 +63,22 @@ extern os_log_t logHandle;
     return;
 }
 
+//send current list status to the app; status is runtime-only and is never
+//persisted as a preference
+-(void)getListStatus:(void (^)(NSDictionary*))reply
+{
+    reply(@{
+        KEY_ALLOW_LIST_STATUS: allowList ? [allowList status] : @{},
+        KEY_BLOCK_LIST_STATUS: blockList ? [blockList status] : @{},
+    });
+}
+
 //update preferences
 // note: sends full preferences back to the client
 -(void)updatePreferences:(NSDictionary*)updates reply:(void (^)(NSDictionary*))reply
 {
     //dbg msg
-    os_log_debug(logHandle, "XPC request: '%s' (%{public}@)", __PRETTY_FUNCTION__, updates);
+    os_log_debug(logHandle, "XPC request: '%s' (%{private}@)", __PRETTY_FUNCTION__, updates);
     
     //call into prefs obj
     if(YES != [preferences update:updates replace:NO])
@@ -95,7 +110,7 @@ extern os_log_t logHandle;
     if(nil == archivedRules)
     {
         //err msg
-        os_log_error(logHandle, "ERROR: failed to archive rules: %{public}@", error);
+        os_log_error(logHandle, "ERROR: failed to archive rules: %{private}@", error);
             
     } else os_log_debug(logHandle, "archived %lu rules, and sending to user...", (unsigned long)rules.rules.count);
 
@@ -118,7 +133,7 @@ extern os_log_t logHandle;
     SecCSFlags flags = kSecCSDefaultFlags | kSecCSCheckNestedCode | kSecCSDoNotValidateResources | kSecCSCheckAllArchitectures;
     
     //dbg msg
-    os_log_debug(logHandle, "XPC request: '%s' with info: %{public}@", __PRETTY_FUNCTION__, info);
+    os_log_debug(logHandle, "XPC request: '%s' with info: %{private}@", __PRETTY_FUNCTION__, info);
     
     //make copy
     ruleInfo = [info mutableCopy];
@@ -153,7 +168,7 @@ extern os_log_t logHandle;
     if(YES != [rules add:[[Rule alloc] init:ruleInfo] save:YES])
     {
         //err msg
-        os_log_error(logHandle, "ERROR: failed to add rule for %{public}@", ruleInfo[KEY_PATH]);
+        os_log_error(logHandle, "ERROR: failed to add rule for %{private}@", ruleInfo[KEY_PATH]);
          
         //bail
         goto bail;
@@ -171,7 +186,7 @@ bail:
 -(void)toggleRule:(NSString*)key rule:(NSString*)uuid state:(NSNumber*)state
 {
     //dbg msg
-    os_log_debug(logHandle, "XPC request: '%s' with key: %{public}@, rule id: %{public}@", __PRETTY_FUNCTION__, key, uuid);
+    os_log_debug(logHandle, "XPC request: '%s' with key: %{private}@, rule id: %{private}@", __PRETTY_FUNCTION__, key, uuid);
     
     //toggle
     if(YES != [rules toggleRule:key rule:uuid state:state])
@@ -196,7 +211,7 @@ bail:
 -(void)deleteRule:(NSString*)key rule:(NSString*)uuid
 {
     //dbg msg
-    os_log_debug(logHandle, "XPC request: '%s' with key: %{public}@, rule id: %{public}@", __PRETTY_FUNCTION__, key, uuid);
+    os_log_debug(logHandle, "XPC request: '%s' with key: %{private}@, rule id: %{private}@", __PRETTY_FUNCTION__, key, uuid);
 
     //delete rule
     if(YES != [rules delete:key rule:uuid])
@@ -262,12 +277,12 @@ bail:
     if(YES != [NSFileManager.defaultManager removeItemAtPath:path error:&error])
     {
         //err msg
-        os_log_error(logHandle, "ERROR: failed to remove %{public}@ (error: %{public}@)", path, error);
+        os_log_error(logHandle, "ERROR: failed to remove %{private}@ (error: %{private}@)", path, error);
     }
     else
     {
         //dbg msg
-        os_log_debug(logHandle, "removed %{public}@", path);
+        os_log_debug(logHandle, "removed %{private}@", path);
         
         //happy
         uninstalled = YES;
@@ -285,12 +300,12 @@ bail:
         if(YES != [NSFileManager.defaultManager removeItemAtPath:path error:&error])
         {
             //err msg
-            os_log_error(logHandle, "ERROR: failed to delete %{public}@ (error: %{public}@)", path, error);
+            os_log_error(logHandle, "ERROR: failed to delete %{private}@ (error: %{private}@)", path, error);
         }
         else
         {
             //dbg msg
-            os_log_debug(logHandle, "removed %{public}@", path);
+            os_log_debug(logHandle, "removed %{private}@", path);
             
             //happy
             uninstalled = YES;
@@ -335,13 +350,13 @@ bail:
     BOOL wasAdded = NO;
     
     //dbg msg
-    os_log_debug(logHandle, "XPC request: '%s' with %{public}@", __PRETTY_FUNCTION__, name);
+    os_log_debug(logHandle, "XPC request: '%s' with %{private}@", __PRETTY_FUNCTION__, name);
     
     //create and add profile
     if(YES != [profiles add:name preferences:preferences])
     {
         //err msg
-        os_log_error(logHandle, "ERROR: failed to add new profile '%{public}@'", name);
+        os_log_error(logHandle, "ERROR: failed to add new profile '%{private}@'", name);
          
         //bail
         goto bail;
@@ -351,7 +366,7 @@ bail:
     wasAdded = YES;
     
     //dbg msg
-    os_log_debug(logHandle, "added new profile '%{public}@'", name);
+    os_log_debug(logHandle, "added new profile '%{private}@'", name);
     
 bail:
     
@@ -373,7 +388,7 @@ bail:
     BOOL isDirectory = NO;
 
     //dbg msg
-    os_log_debug(logHandle, "XPC request: '%s' with name: %{public}@", __PRETTY_FUNCTION__, name);
+    os_log_debug(logHandle, "XPC request: '%s' with name: %{private}@", __PRETTY_FUNCTION__, name);
 
     //new profile?
     if(nil != name)
@@ -384,7 +399,7 @@ bail:
         if(nil == newProfilePath)
         {
             //err msg
-            os_log_error(logHandle, "ERROR: failed to resolve profile name '%{public}@'", name);
+            os_log_error(logHandle, "ERROR: failed to resolve profile name '%{private}@'", name);
             goto bail;
         }
 
@@ -394,7 +409,7 @@ bail:
             (YES != isDirectory) )
         {
             //err msg
-            os_log_error(logHandle, "ERROR: profile '%{public}@' doesn't exist", newProfilePath);
+            os_log_error(logHandle, "ERROR: profile '%{private}@' doesn't exist", newProfilePath);
             goto bail;
         }
     }
@@ -416,7 +431,7 @@ bail:
     wasSet = YES;
 
     //dbg msg
-    os_log_debug(logHandle, "set profile to %{public}@", newProfilePath ? newProfilePath : @"Default");
+    os_log_debug(logHandle, "set profile to %{private}@", newProfilePath ? newProfilePath : @"Default");
 
 bail:
 
@@ -432,7 +447,7 @@ bail:
     BOOL wasDeleted = NO;
     
     //dbg msg
-    os_log_debug(logHandle, "XPC request: '%s' with name: %{public}@", __PRETTY_FUNCTION__, name);
+    os_log_debug(logHandle, "XPC request: '%s' with name: %{private}@", __PRETTY_FUNCTION__, name);
     
     //sanity check
     if(nil == name)
@@ -454,7 +469,7 @@ bail:
     wasDeleted = YES;
     
     //dbg msg
-    os_log_debug(logHandle, "deleted profile %{public}@", name);
+    os_log_debug(logHandle, "deleted profile %{private}@", name);
     
 bail:
     

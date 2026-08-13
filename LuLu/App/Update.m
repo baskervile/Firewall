@@ -78,7 +78,7 @@ extern os_log_t logHandle;
                     if(YES != [NSProcessInfo.processInfo isOperatingSystemAtLeastVersion:supportedOS])
                     {
                         //dbg mdg
-                        os_log_debug(logHandle, "Latest version requires macOS %ld.%ld, but current macOS is %{public}@", supportedOS.majorVersion, supportedOS.minorVersion, NSProcessInfo.processInfo.operatingSystemVersionString);
+                        os_log_debug(logHandle, "Latest version requires macOS %ld.%ld, but current macOS is %{private}@", supportedOS.majorVersion, supportedOS.minorVersion, NSProcessInfo.processInfo.operatingSystemVersionString);
                         
                         //not supported
                         result = Update_NotSupported;
@@ -90,7 +90,7 @@ extern os_log_t logHandle;
         else
         {
             //err msg
-            os_log_error(logHandle, "ERROR: Failed to retrieve product info (for update check) from %{public}@", PRODUCT_VERSIONS_URL);
+            os_log_error(logHandle, "ERROR: Failed to retrieve product info (for update check) from %{private}@", PRODUCT_VERSIONS_URL);
             
             result = Update_Error;
         }
@@ -124,7 +124,7 @@ extern os_log_t logHandle;
         if(nil == json)
         {
             //err msg
-            os_log_error(logHandle, "ERROR: failed to download product info from %{public}@", PRODUCT_VERSIONS_URL);
+            os_log_error(logHandle, "ERROR: failed to download product info from %{private}@", PRODUCT_VERSIONS_URL);
             goto bail;
         }
         
@@ -133,7 +133,7 @@ extern os_log_t logHandle;
         if(nil != error)
         {
             //err msg
-            os_log_error(logHandle, "ERROR: Failed to convert 'products' to JSON (error: %{public}@)", error);
+            os_log_error(logHandle, "ERROR: Failed to convert 'products' to JSON (error: %{private}@)", error);
             goto bail;
         }
         
@@ -147,7 +147,7 @@ extern os_log_t logHandle;
     @catch(NSException* exception)
     {
         //err msg
-        os_log_error(logHandle, "ERROR: Failed to convert 'products' to JSON (exception: %{public}@)", exception);
+        os_log_error(logHandle, "ERROR: Failed to convert 'products' to JSON (exception: %{private}@)", exception);
     }
 
 bail:

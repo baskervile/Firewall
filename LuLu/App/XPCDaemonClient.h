@@ -31,6 +31,10 @@
 // note: synchronous
 -(NSDictionary*)getPreferences;
 
+//get runtime status for the configured allow/block lists
+// note: synchronous
+-(NSDictionary*)getListStatus;
+
 //update (save) preferences
 // note: synchronous, as then returns latest preferences
 -(NSDictionary*)updatePreferences:(NSDictionary*)preferences;

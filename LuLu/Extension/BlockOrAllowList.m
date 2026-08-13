@@ -37,11 +37,26 @@ extern Preferences* preferences;
 }
 
 //was specified block list remote
-// ...just checks if prefixed with http:// || https://
+// remote policy is deliberately restricted to well-formed HTTPS URLs
 -(BOOL)isRemote
 {
-    //specified path a URL?
-    return ((YES == [self.path hasPrefix:@"http://"]) || (YES == [self.path hasPrefix:@"https://"]));
+    NSURLComponents* components = [NSURLComponents componentsWithString:self.path];
+
+    return (components.scheme.length != 0 &&
+            [components.scheme caseInsensitiveCompare:@"https"] == NSOrderedSame &&
+            components.host.length != 0);
+}
+
+//HTTP policy is vulnerable to network tampering.  Reject malformed HTTPS URLs
+//as well, rather than accidentally treating them as a local path.
+-(BOOL)isUnsupportedRemote
+{
+    NSURLComponents* components = [NSURLComponents componentsWithString:self.path];
+
+    return (components.scheme.length != 0 &&
+            ([components.scheme caseInsensitiveCompare:@"http"] == NSOrderedSame ||
+            ([components.scheme caseInsensitiveCompare:@"https"] == NSOrderedSame &&
+             NO == [self isRemote])));
 }
 
 //should reload
@@ -117,6 +132,27 @@ bail:
     }
 }
 
+//arm a single reload timer; replacing an existing timer avoids duplicate
+//background fetches when startup retries or preference changes overlap
+-(void)armReloadTimerWithInitialDelay:(NSTimeInterval)initialDelay
+                              interval:(NSTimeInterval)interval
+{
+    __weak typeof(self) weakSelf = self;
+
+    [self stopReloadTimer];
+
+    self.reloadTimer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0,
+                                               dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0));
+    dispatch_source_set_timer(self.reloadTimer,
+                              dispatch_time(DISPATCH_TIME_NOW, (int64_t)(initialDelay * NSEC_PER_SEC)),
+                              (uint64_t)(interval * NSEC_PER_SEC),
+                              (uint64_t)(MIN(interval / 10.0, 60.0) * NSEC_PER_SEC));
+    dispatch_source_set_event_handler(self.reloadTimer, ^{
+        [weakSelf load:weakSelf.path];
+    });
+    dispatch_resume(self.reloadTimer);
+}
+
 //clear the list
 // empties items & stops any (remote) reload timer
 -(void)clear
@@ -135,6 +171,8 @@ bail:
 
         //reset timestamp
         self.lastModified = nil;
+        self.lastLoaded = nil;
+        self.lastError = nil;
 
         //stop any (remote) reload timer
         [self stopReloadTimer];
@@ -152,15 +190,24 @@ bail:
     
     //file contents
     NSString* list = nil;
+
+    //changing sources is different from a transient refresh failure: retaining
+    //a policy from the previous source would be surprising and unsafe.
+    BOOL pathChanged = NO;
     
     //sync
     @synchronized (self) {
         
+    pathChanged = (nil != self.path && NO == [self.path isEqualToString:path]);
+
+    if(YES == pathChanged)
+    {
+        self.lastLoaded = nil;
+        self.lastError = nil;
+    }
+
     //update path
     self.path = path;
-        
-    //reset list
-    [self.items removeAllObjects];
         
     //dbg msg
     os_log_debug(logHandle, "%s", __PRETTY_FUNCTION__);
@@ -169,6 +216,10 @@ bail:
     // path?
     if(0 == self.path.length)
     {
+        //an explicitly cleared policy source means an empty policy
+        [self.items removeAllObjects];
+        self.lastLoaded = nil;
+        self.lastError = nil;
         //dbg msg
         os_log_debug(logHandle, "no list specified...");
 
@@ -179,6 +230,17 @@ bail:
         loaded = YES;
 
         //bail
+        goto bail;
+    }
+
+    //Never retrieve policy over plaintext HTTP. Invalid policy sources are
+    //cleared so normal LuLu rule handling can continue without stale policy.
+    if(YES == [self isUnsupportedRemote])
+    {
+        os_log_error(logHandle, "ERROR: rejecting unsupported remote list URL");
+        [self.items removeAllObjects];
+        self.lastError = @"Invalid remote URL";
+        [self stopReloadTimer];
         goto bail;
     }
         
@@ -194,32 +256,30 @@ bail:
         if(nil != error)
         {
             //err msg
-            os_log_error(logHandle, "ERROR: failed to (re)load (remote) list, %{public}@ (error: %{public}@)", self.path, error);
+            os_log_error(logHandle, "ERROR: failed to (re)load (remote) list, %{private}@ (error: %{private}@)", self.path, error);
+
+            //Preserve the last known-good policy during a transient refresh.
+            //A newly configured source remains empty and falls back to normal
+            //LuLu rule handling instead of disrupting all network traffic.
+            if(YES == pathChanged)
+            {
+                [self.items removeAllObjects];
+            }
+
+            self.lastError = @"Remote list unavailable";
+
+            //Continue trying in the background when the machine starts
+            //offline or a policy service is temporarily unavailable. This
+            //preserves normal LuLu usability without leaving a new policy
+            //source permanently unloaded.
+            [self armReloadTimerWithInitialDelay:(5 * 60) interval:(15 * 60)];
 
             //bail
             goto bail;
         }
 
-        //arm the daily (re)load timer, just once
-        // a single repeating source - so reloads don't stack on each load:
-        if(nil == self.reloadTimer)
-        {
-            //weak self, to avoid pinning this object via the (forever-repeating) timer
-            __weak typeof(self) weakSelf = self;
-
-            //create + schedule (first fire in 24h, then every 24h)
-            self.reloadTimer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0));
-            dispatch_source_set_timer(self.reloadTimer, dispatch_time(DISPATCH_TIME_NOW, (int64_t)(24 * 60 * 60 * NSEC_PER_SEC)), (uint64_t)(24 * 60 * 60 * NSEC_PER_SEC), (uint64_t)(60 * 60 * NSEC_PER_SEC));
-            dispatch_source_set_event_handler(self.reloadTimer, ^{
-
-                //dbg msg
-                os_log_debug(logHandle, "(re)loading (remote) list");
-
-                //(re)load (current path)
-                [weakSelf load:weakSelf.path];
-            });
-            dispatch_resume(self.reloadTimer);
-        }
+        //A successful fetch returns to the normal low-frequency refresh.
+        [self armReloadTimerWithInitialDelay:(24 * 60 * 60) interval:(24 * 60 * 60)];
     }
     
     //local file
@@ -227,17 +287,22 @@ bail:
     else
     {
         //dbg msg
-        os_log_debug(logHandle, "(re)loading (local) list, %{public}@", self.path);
+        os_log_debug(logHandle, "(re)loading (local) list, %{private}@", self.path);
 
         //local (not remote) -> stop any reload timer
         [self stopReloadTimer];
+
+        //A local policy path is authoritative.  Do not continue enforcing a
+        //policy from a different, now-missing local file.
+        [self.items removeAllObjects];
 
         //(re)load
         list = [NSString stringWithContentsOfFile:self.path encoding:NSUTF8StringEncoding error:&error];
         if(nil != error)
         {
             //err msg
-            os_log_error(logHandle, "ERROR: failed to (re)load (local) list, %{public}@ (error: %{public}@)", self.path, error);
+            os_log_error(logHandle, "ERROR: failed to (re)load (local) list, %{private}@ (error: %{private}@)", self.path, error);
+            self.lastError = @"Local list unavailable";
             
             //bail
             goto bail;
@@ -261,6 +326,9 @@ bail:
     //dbg msg
     os_log_debug(logHandle, "(re)loaded %lu list items", (unsigned long)self.items.count);
 
+    self.lastLoaded = NSDate.date;
+    self.lastError = nil;
+
     //success
     loaded = YES;
 
@@ -269,6 +337,26 @@ bail:
 bail:
 
     return loaded;
+}
+
+//return only presentation-safe runtime state; detailed errors remain private
+//in Unified Logging
+-(NSDictionary*)status
+{
+    NSMutableDictionary* status = nil;
+
+    @synchronized (self) {
+        status = [@{
+            KEY_LIST_STATUS_PATH: self.path ?: @"",
+            KEY_LIST_STATUS_REMOTE: @([self isRemote]),
+            KEY_LIST_STATUS_ITEM_COUNT: @(self.items.count),
+        } mutableCopy];
+
+        if(nil != self.lastLoaded) status[KEY_LIST_STATUS_LAST_LOADED] = self.lastLoaded;
+        if(0 != self.lastError.length) status[KEY_LIST_STATUS_ERROR] = self.lastError;
+    }
+
+    return status;
 }
 
 //check if flow matches item on block or allow list
@@ -370,7 +458,7 @@ bail:
     if(0 != matches.count)
     {
         //dbg msg
-        os_log_debug(logHandle, "endpoint names %{public}@ matched the following list items %{public}@", endpointNames, matches);
+        os_log_debug(logHandle, "endpoint names %{private}@ matched the following list items %{private}@", endpointNames, matches);
        
         //set flag
         isMatch = YES;

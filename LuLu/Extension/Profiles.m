@@ -50,7 +50,7 @@ extern Preferences* preferences;
     if(![NSFileManager.defaultManager fileExistsAtPath:self.directory])
     {
         //dbg msg
-        os_log_debug(logHandle, "no profiles? didn't find profiles directory %{public}@", self.directory);
+        os_log_debug(logHandle, "no profiles? didn't find profiles directory %{private}@", self.directory);
         goto bail;
     }
 
@@ -72,7 +72,7 @@ extern Preferences* preferences;
     [profiles sortUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
 
     //dbg msg
-    os_log_debug(logHandle, "profiles: %{public}@", profiles);
+    os_log_debug(logHandle, "profiles: %{private}@", profiles);
     
 bail:
     
@@ -94,7 +94,7 @@ bail:
     if(0 == sanitizedName.length)
     {
         //err msg
-        os_log_error(logHandle, "ERROR: profile name '%{public}@' is invalid", name);
+        os_log_error(logHandle, "ERROR: profile name '%{private}@' is invalid", name);
         goto bail;
     }
 
@@ -107,7 +107,7 @@ bail:
     if(YES != [resolvedPath hasPrefix:[self.directory stringByAppendingString:@"/"]])
     {
         //err msg
-        os_log_error(logHandle, "ERROR: resolved path '%{public}@' isn't in the profile directory %{public}@",
+        os_log_error(logHandle, "ERROR: resolved path '%{private}@' isn't in the profile directory %{private}@",
                      resolvedPath, self.directory);
 
         //unset
@@ -129,7 +129,7 @@ bail:
     NSString *newProfilePath = nil;
     
     //dbg msg
-    os_log_debug(logHandle, "method '%s' invoked with %{public}@ / %{public}@", __PRETTY_FUNCTION__, name, newPreferences);
+    os_log_debug(logHandle, "method '%s' invoked with %{private}@ / %{private}@", __PRETTY_FUNCTION__, name, newPreferences);
 
     //create base profiles directory if needed
     if(YES != [NSFileManager.defaultManager fileExistsAtPath:self.directory])
@@ -138,7 +138,7 @@ bail:
         if(YES != [NSFileManager.defaultManager createDirectoryAtPath:self.directory withIntermediateDirectories:YES attributes:nil error:&error])
         {
             //error
-            os_log_error(logHandle, "ERROR: failed to create profiles directory '%{public}@': %{public}@",
+            os_log_error(logHandle, "ERROR: failed to create profiles directory '%{private}@': %{private}@",
                          self.directory, error.localizedDescription);
             goto bail;
         }
@@ -150,7 +150,7 @@ bail:
     if(nil == newProfilePath)
     {
         //err msg
-        os_log_error(logHandle, "ERROR: failed to resolve profile name '%{public}@'", name);
+        os_log_error(logHandle, "ERROR: failed to resolve profile name '%{private}@'", name);
         goto bail;
     }
     
@@ -161,12 +161,12 @@ bail:
         if(YES != [NSFileManager.defaultManager removeItemAtPath:newProfilePath error:&error])
         {
             //err msg
-            os_log_error(logHandle, "ERROR: failed to remove existing profile %{public}@ (error: %{public}@)", newProfilePath, error);
+            os_log_error(logHandle, "ERROR: failed to remove existing profile %{private}@ (error: %{private}@)", newProfilePath, error);
         }
         else
         {
             //dbg msg
-            os_log_debug(logHandle, "removed existing profile %{public}@", newProfilePath);
+            os_log_debug(logHandle, "removed existing profile %{private}@", newProfilePath);
         }
     }
     
@@ -174,13 +174,13 @@ bail:
     if(YES != [NSFileManager.defaultManager createDirectoryAtPath:newProfilePath withIntermediateDirectories:NO attributes:nil error:&error])
     {
         //err msg
-        os_log_error(logHandle, "ERROR: Failed to create new profile directory '%{public}@': %{public}@",
+        os_log_error(logHandle, "ERROR: Failed to create new profile directory '%{private}@': %{private}@",
                      newProfilePath, error.localizedDescription);
         goto bail;
     }
     
     //dbg msg
-    os_log_debug(logHandle, "created profile directory: %{public}@", newProfilePath);
+    os_log_debug(logHandle, "created profile directory: %{private}@", newProfilePath);
     
     //set as current
     [self set:newProfilePath];
@@ -251,36 +251,36 @@ bail:
     if(nil == profile)
     {
         //err msg
-        os_log_error(logHandle, "ERROR: failed to resolve profile name '%{public}@'", name);
+        os_log_error(logHandle, "ERROR: failed to resolve profile name '%{private}@'", name);
         goto bail;
     }
 
     //dbg msg
-    os_log_debug(logHandle, "deleting profile directory: %{public}@", profile);
+    os_log_debug(logHandle, "deleting profile directory: %{private}@", profile);
     
     //flag
     if(YES != [NSFileManager.defaultManager removeItemAtPath:profile error:&error])
     {
         //err msg
-        os_log_error(logHandle, "ERROR: Failed to delete profile directory '%{public}@': %{public}@",
+        os_log_error(logHandle, "ERROR: Failed to delete profile directory '%{private}@': %{private}@",
                      profile, error.localizedDescription);
         goto bail;
     }
     
     //dbg msg
-    os_log_debug(logHandle, "deleted profile directory: %{public}@", profile);
+    os_log_debug(logHandle, "deleted profile directory: %{private}@", profile);
     
     //get current
     current = [preferences getCurrentProfile];
     
     //dbg msg
-    os_log_debug(logHandle, "checking if %{public}@ matches current %{public}@", profile, current);
+    os_log_debug(logHandle, "checking if %{private}@ matches current %{private}@", profile, current);
     
     //was current?
     if(YES == [profile isEqualToString:current])
     {
         //dbg msg
-        os_log_debug(logHandle, "'%{public}@' was current profile, so will reset back to default", profile);
+        os_log_debug(logHandle, "'%{private}@' was current profile, so will reset back to default", profile);
         
         //unset path
         [self set:nil];
